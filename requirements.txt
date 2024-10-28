@@ -1,0 +1,8 @@
+numpy>=2.1.0,<3.0.0                 # for numerical operations
+pandas>=2.2.0,<3.0.0                # for data manipulation
+openpyxl>=3.1.0,<4.0.0              # for excel support
+Flask>=3.0.0                        # for web dashboard
+SQLAlchemy>=2.0.0                   # for database support
+Flask-SQLAlchemy>=3.1.0             # for database suupport with Flask
+Flask-Migrate>=4.0.0                # for database migrations
+python-dotenv>=1.0.0                # for environment variables
