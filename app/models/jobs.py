@@ -10,12 +10,13 @@ class Job(db.Model):
     name = db.Column(db.String(255), nullable=False)
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflows.id'), nullable=False)
     workflow_type = db.Column(Enum(WorkflowType), nullable=False)
+    
     start_time = db.Column(db.DateTime, nullable=True)
     end_time = db.Column(db.DateTime, nullable=True)
     status = db.Column(Enum(JobStatus), default=JobStatus.PENDING)
     next_run_time = db.Column(db.DateTime, nullable=True) 
     
-    steps = db.relationship('JobStep', backref='job', lazy=True)
+    steps = db.relationship('JobStep', backref='job', lazy=True, cascade='all, delete-orphan')
     
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))

@@ -39,6 +39,7 @@ This is a Flask-based Task Management application that allows users to create, v
    flask db init
    flask db migrate -m "Initial migration"
    flask db upgrade   ```
+   flask seed-db
 
 ## Running the Application
 

@@ -1,0 +1,161 @@
+{% extends 'layouts/base.html' %}
+
+{% block meta_title %}Dashboard{% endblock %}
+
+{% block content %}
+    <!-- Alert for Danger Message -->
+    {% if msg %}
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        <strong>Danger!</strong> 
+        {% if msg.url %}
+            <a href="{{ msg.url }}">{{ msg.text }}</a>
+        {% else %}
+            {{ msg.text }}
+        {% endif %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Alert for Warning Message -->
+    <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+        <strong>Warning:</strong> 
+        {% if msg.url %}
+            <a href="{{ msg.url }}">{{ msg.text }}</a>
+        {% else %}
+            {{ msg.text }}
+        {% endif %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <div class="row row-deck row-cards">
+        <!-- Card for Client Statuses -->
+        <div class="col-sm-6 col-lg-4">
+            <a href="#" class="card card-sm">
+                <div class="card-body">
+                    <span class="position-absolute top-0 translate-middle badge rounded-pill bg-danger text-light">1</span>
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-blue text-white avatar">
+                                <svg class="icon">
+                                    <use xlink:href="{{ url_for('static', filename='icons/contacts.svg') }}#contacts" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium">100 HMDA Reports</div>
+                            <div class="text-muted">1 Active</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <a href="#" class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-blue text-white avatar">
+                                <svg class="icon">
+                                    <use xlink:href="{{ url_for('static', filename='icons/contacts.svg') }}#contacts" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium">20 EWRA Reports</div>
+                            <div class="text-muted">1 Active</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <a href="#" class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-blue text-white avatar">
+                                <svg class="icon">
+                                    <use xlink:href="{{ url_for('static', filename='icons/contacts.svg') }}#contacts" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium">2 Workflow Automations</div>
+                            <div class="text-muted">1 Active</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Tabs for Recent Activity -->
+        <div class="col-12 d-block">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" href="#tab-index" role="tab" data-bs-toggle="tab">Recent User Activity</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" href="#tab-staff" role="tab" data-bs-toggle="tab">Recent HMDA Activity</a>
+                </li>
+            </ul>
+
+            <div class="card">
+                <div class="tab-content" id="tabs">
+                    <!-- Tab Pane for Client Activity -->
+                    <div class="tab-pane fade show active" id="tab-index" role="tabpanel">
+                        <table class="table table-vcenter card-table table-striped">
+                            <tbody>
+                                {% for event in client_events %}
+                                <tr>
+                                    <td class="w-1">
+                                        <a href="/">
+                                            <span class="avatar avatar-xs" style="background-image: url({{ event.client.email }}&size=24)"></span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/">{{ event.client.name[:40] }}</a>
+                                    </td>
+                                    <td>{{ event.message[:50] }}</td>
+                                    <td>{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>{{ (now - event.created_at).total_seconds() // 3600 }} hours ago</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td class="text-muted" colspan="4">The list is empty</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Tab Pane for Staff Activity -->
+                    <div class="tab-pane fade" id="tab-staff" role="tabpanel">
+                        <table class="table table-vcenter card-table table-striped">
+                            <tbody>
+                                {% for event in staff_events %}
+                                <tr>
+                                    <td class="w-1">
+                                        <a href="#">
+                                            <span class="avatar avatar-xs" style="background-image: url({{ event.staff.email }}&size=24)"></span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="#">{{ event.staff.name }}</a>
+                                    </td>
+                                    <td>{{ event.message[:50] }}</td>
+                                    <td>{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>{{ (now - event.created_at).total_seconds() // 3600 }} hours ago</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td class="text-muted" colspan="5">The list is empty</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -7,8 +7,9 @@ class JobStep(db.Model):
     __tablename__ = 'job_steps'
 
     id = db.Column(db.Integer, primary_key=True)
-    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
-    task_id = db.Column(db.Integer, db.ForeignKey('workflow_tasks.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    order = db.Column(db.Integer, nullable=False)
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id', name='fk_job_steps_job_id'), nullable=False)
     status = db.Column(Enum(StepStatus), default=StepStatus.PENDING)
     schedule_type = db.Column(Enum(ScheduleType), nullable=False)
     started_at = db.Column(db.DateTime, default=None)

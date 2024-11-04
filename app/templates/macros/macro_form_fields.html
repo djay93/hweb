@@ -1,0 +1,60 @@
+{# templates/form_fields.html #}
+
+{% macro render_form_field(field, field_type='text', label='', name='', placeholder='', disabled=False) %}
+    <div class="form-group mb-3 row">
+        <label class="form-label col-3 col-form-label">{{ label or field.label.text }}</label>
+        <div class="col">
+            {% if field_type == 'static' %}
+                <div class="form-control-plaintext">{{ field.data or placeholder or '' }}</div>
+            
+            {% elif field_type == 'password' %}
+                <input type="password" class="form-control {% if field.errors %}is-invalid{% endif %}" 
+                       name="{{ name or field.name }}" 
+                       placeholder="{{ placeholder or 'Enter password' }}" 
+                       value="{{ '' if field.data is none else field.data }}"
+                       {% if disabled %}disabled{% endif %}>
+            
+            {% elif field_type == 'textarea' %}
+                <textarea class="form-control {% if field.errors %}is-invalid{% endif %}" 
+                          name="{{ name or field.name }}" 
+                          placeholder="{{ placeholder or 'Enter text' }}"
+                          {% if disabled %}disabled{% endif %}>{{ '' if field.data is none else field.data }}</textarea>
+            
+            {% elif field_type == 'select' %}
+                <select class="form-select {% if field.errors %}is-invalid{% endif %}" 
+                        name="{{ name or field.name }}"
+                        required
+                        {% if disabled %}disabled{% endif %}>
+                    {# Modified placeholder option #}
+                    <option value="" {% if not field.data %}selected{% endif %}>{{ placeholder or 'Select an option' }}</option>
+                    {% for option_value, option_label in field.choices %}
+                        <option value="{{ option_value }}" {% if option_value == field.data %}selected{% endif %}>{{ option_label }}</option>
+                    {% endfor %}
+                </select>
+            
+            {% elif field_type == 'date' %}
+                <input type="date" 
+                       class="form-control {% if field.errors %}is-invalid{% endif %}" 
+                       name="{{ name or field.name }}" 
+                       value="{{ '' if field.data is none else field.data.strftime('%Y-%m-%dT%H:%M') if field.data else '' }}"
+                       {% if disabled %}disabled{% endif %}>
+            
+            {% else %}
+                <input type="text" class="form-control {% if field.errors %}is-invalid{% endif %}" 
+                       name="{{ name or field.name }}" 
+                       placeholder="{{ placeholder or 'Enter text' }}" 
+                       value="{{ '' if field.data is none else field.data }}"
+                       {% if disabled %}disabled{% endif %}>
+            {% endif %}
+            
+            {# Display validation errors if any #}
+            {% if field.errors %}
+                <div class="invalid-feedback">
+                    {% for error in field.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}

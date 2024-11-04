@@ -9,7 +9,7 @@ class Workflow(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(255), nullable=True)
-    type = db.Column(Enum(WorkflowType), nullable=False)
+    workflow_type = db.Column(Enum(WorkflowType), nullable=False,)
     tasks = db.relationship('WorkflowTask', backref='workflow', lazy=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))

@@ -1,0 +1,60 @@
+{% if pagination.pages > 0 %}
+    <p class="m-0 text-secondary">
+        Showing <span>{{ (pagination.page - 1) * pagination.per_page + 1 }}</span> 
+        to <span>{{ min(pagination.page * pagination.per_page, pagination.total) }}</span> 
+        of <span>{{ pagination.total }}</span> entries
+    </p>
+{% endif %}
+
+{% if pagination.pages > 1 %}
+    <ul class="pagination m-0 ms-auto">
+        <!-- Previous Page Link -->
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" {% if pagination.has_prev %}href="{{ url_for(request.endpoint, page=pagination.prev_num, **request.view_args) }}"{% else %}href="#"{% endif %}>
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                    <use xlink:href="{{ url_for('static', filename='icons/chevron-left.svg') }}#chevron-left"/>
+                </svg>
+            </a>
+        </li>
+
+        <!-- First Page Link -->
+        {% if pagination.page > 3 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for(request.endpoint, page=1, **request.view_args) }}">1</a>
+            </li>
+            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+        {% endif %}
+
+        <!-- Page Numbers -->
+        {% for num in range(max(1, pagination.page - 2), min(pagination.pages + 1, pagination.page + 3)) %}
+            {% if num == pagination.page %}
+                <li class="page-item active">
+                    <a class="page-link" href="#">{{ num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for(request.endpoint, page=num, **request.view_args) }}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Last Page Link -->
+        {% if pagination.page < pagination.pages - 2 %}
+            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.pages, **request.view_args) }}">
+                    {{ pagination.pages }}
+                </a>
+            </li>
+        {% endif %}
+
+        <!-- Next Page Link -->
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" {% if pagination.has_next %}href="{{ url_for(request.endpoint, page=pagination.next_num, **request.view_args) }}"{% else %}href="#"{% endif %}>
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                    <use xlink:href="{{ url_for('static', filename='icons/chevron-right.svg') }}#chevron-right"/>
+                </svg>
+            </a>
+        </li>
+    </ul>
+{% endif %}

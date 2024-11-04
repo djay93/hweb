@@ -6,3 +6,4 @@ SQLAlchemy>=2.0.0                   # for database support
 Flask-SQLAlchemy>=3.1.0             # for database suupport with Flask
 Flask-Migrate>=4.0.0                # for database migrations
 python-dotenv>=1.0.0                # for environment variables
+Flask-WTF>=1.2.0                    # for form handling

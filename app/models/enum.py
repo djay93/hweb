@@ -1,26 +1,28 @@
 from enum import Enum as PyEnum
 
 class JobStatus(PyEnum):
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    ERROR = "error"
-    CANCELED = "canceled"
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    ERROR = "ERROR"
+    CANCELED = "CANCELED"
 
 class StepStatus(PyEnum):
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    ERROR = "error"
-    CANCELED = "canceled"
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    ERROR = "ERROR"
+    CANCELED = "CANCELED"
+    SKIPPED = "SKIPPED"
 
 class ScheduleType(PyEnum):
-    WEEKLY = "weekly"
-    MONTHLY = "monthly"
-    YEARLY = "yearly"
-    MANUAL = "manual"
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
+    YEARLY = "YEARLY"
+    MANUAL = "MANUAL"
 
 class WorkflowType(PyEnum):
-    HMDA = "hmda"
-    MORTGAGE = "mortgage"
-    TEST = "test"
+    HMDA_WEEKLY = "HMDA Weekly Processing"
+    EWRA = "EWRA Processing"
+    QUARTERLY_REVIEW = "Quarterly Review"
+    TEST = "Test Workflow"

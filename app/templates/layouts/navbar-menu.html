@@ -1,0 +1,43 @@
+<header class="navbar-expand-md">
+    <div class="collapse navbar-collapse" id="navbar-menu">
+        <div class="navbar navbar-light">
+            <div class="container-xl">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home.index') }}">
+                            <svg class="icon d-none d-xxl-block me-1" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;">
+                                <use xlink:href="{{ url_for('static', filename='icons/home.svg') }}#home"/>
+                            </svg>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    {% for group in nav_items %}
+                    {% if group.subpages %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                            <svg class="icon d-none d-xxl-block me-1" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;">
+                                <use xlink:href="{{ url_for('static', filename='icons/' + group.class + '.svg') }}#{{ group.class }}" />
+                            </svg>
+                            <span class="nav-link-title">{{ group.label }}</span>
+                        </a>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-menu-columns">
+                                <div class="dropdown-menu-column">
+                                    {% for subpage in group.subpages %}
+                                    {% if subpage.external %}
+                                        <a class="dropdown-item" href="{{ subpage.url }}" target="_blank">{{ subpage.label }}</a>
+                                    {% else %}
+                                        <a class="dropdown-item" href="{{ url_for(subpage.url) }}">{{ subpage.label }}</a>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>

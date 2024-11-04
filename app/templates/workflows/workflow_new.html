@@ -1,0 +1,44 @@
+{% extends 'layouts/base.html' %}
+{% import 'macros/macro_form_fields.html' as mff %}
+
+{% block title %}Compliance Hub - Create New Workflow{% endblock %}
+{% block page_title %}
+    Create New Workflow
+{% endblock %}
+
+{% block content %}
+<div class="row row-cards justify-content-center">
+    <div class="col-lg-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="card">
+            <form method="POST" action="{{ url_for('workflows.new_workflow') }}">
+                <div class="card-body">
+                    {{ workflow.csrf_token }}
+                    {{ workflow.id(type='hidden') }}
+
+                    {{ mff.render_form_field(workflow.name, field_type='text', label='Name', placeholder='Enter workflow name') }}
+                    {{ mff.render_form_field(workflow.description, field_type='textarea', label='Description', placeholder='Enter workflow description') }}
+                    {{ mff.render_form_field(workflow.workflow_type, field_type='select', label='Workflow Type', placeholder='Select workflow type') }}  
+                </div>
+                <div class="card-footer text-end">
+                    <div class="d-flex">
+                        <a href="{{ url_for('workflows.list_workflows') }}" class="btn btn-link">Cancel</a>
+                        <button type="submit" class="btn btn-primary ms-auto">
+                            Create Workflow
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
