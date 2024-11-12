@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from dotenv import load_dotenv
 from .config import Config
 from .extensions import db, migrate
@@ -37,20 +37,13 @@ def create_app():
     app.register_blueprint(user_bp, url_prefix='/user')
     app.register_blueprint(workflow_api_bp, url_prefix='/api/workflows')
     app.register_blueprint(hmda_api_bp, url_prefix='/api/hmda')
+    
     # Context processor
     app.context_processor(ContextProcessors.inject_nav_items)
 
     # Configure logging
     if not app.debug and not app.testing:
         logging_util.configure_logging(app)
-
-    # Home route
-    @app.route('/')
-    def home():
-        expected_csrf_token = generate_csrf()
-        app.logger.info(f"Expected CSRF token (server-side): {expected_csrf_token}")
-
-        return "EC Workflow Automation is up and running."
 
     # Seed database using CLI
     @app.cli.command("seed-db")

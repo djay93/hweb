@@ -1,4 +1,5 @@
 from enum import Enum as PyEnum
+from typing import List, Tuple
 
 class JobStatus(PyEnum):
     PENDING = "PENDING"
@@ -6,6 +7,12 @@ class JobStatus(PyEnum):
     COMPLETED = "COMPLETED"
     ERROR = "ERROR"
     CANCELED = "CANCELED"
+
+    @classmethod
+    def choices(cls) -> List[Tuple[str, str]]:
+        """Return choices for forms"""
+        return [(status.name, status.value) for status in cls]
+
 
 class StepStatus(PyEnum):
     PENDING = "PENDING"
@@ -15,14 +22,38 @@ class StepStatus(PyEnum):
     CANCELED = "CANCELED"
     SKIPPED = "SKIPPED"
 
+    @classmethod
+    def choices(cls) -> List[Tuple[str, str]]:
+        """Return choices for forms"""
+        return [(status.name, status.value) for status in cls]
+
 class ScheduleType(PyEnum):
+    AUTO = "Automated"
+    MANUAL = "Manual"
     WEEKLY = "WEEKLY"
     MONTHLY = "MONTHLY"
     YEARLY = "YEARLY"
-    MANUAL = "MANUAL"
+
+    @classmethod
+    def choices(cls) -> List[Tuple[str, str]]:
+        """Return choices for forms"""
+        return [(type.name, type.value) for type in cls]
 
 class WorkflowType(PyEnum):
-    HMDA_WEEKLY = "HMDA Weekly Processing"
-    EWRA = "EWRA Processing"
+    HMDA = "HMDA"
+    EWRA = "EWRA"
     QUARTERLY_REVIEW = "Quarterly Review"
-    TEST = "Test Workflow"
+
+    @classmethod
+    def choices(cls) -> List[Tuple[str, str]]:
+        """Return choices for forms"""
+        return [(type.name, type.value) for type in cls]
+
+class WorkflowTaskType(PyEnum):
+    AUTO = "Automated"
+    MANUAL = "Manual"
+
+    @classmethod
+    def choices(cls) -> List[Tuple[str, str]]:
+        """Return choices for forms"""
+        return [(type.name, type.value) for type in cls]

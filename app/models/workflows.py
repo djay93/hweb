@@ -1,7 +1,10 @@
-from app.extensions import db
 from datetime import datetime, UTC
+from typing import List
 from sqlalchemy import Enum
-from app.models.enum import WorkflowType
+
+from app.extensions import db
+from .enum import WorkflowType
+from .workflow_tasks import WorkflowTask
 
 class Workflow(db.Model):
     __tablename__ = 'workflows'
@@ -16,3 +19,5 @@ class Workflow(db.Model):
 
     def __repr__(self):
         return f'<Workflow {self.name}>'
+    
+    

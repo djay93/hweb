@@ -1,0 +1,244 @@
+{% extends 'layouts/base.html' %}
+{% import 'macros/form_field_macros.html' as ffm %}
+{% import 'macros/button_macros.html' as bm %}
+
+{% block title %}Compliance Hub - HMDA Process Details{% endblock %}
+{% block page_title %}
+    HMDA Process Details
+{% endblock %}
+
+{% block content %}
+<div class="row row-cards justify-content-center" x-data="hmdaViewForm()">
+    <div class="col-md-12">
+        <!-- Flash Messages -->
+        <template x-if="message">
+            <div :class="`alert alert-${message.type} alert-dismissible fade show mb-3`" role="alert">
+                <span x-text="message.text"></span>
+                <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
+            </div>
+        </template>
+
+        <!-- Tabs for Job Details and Steps/Checklists -->
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#job-details-tab">HMDA Job Details</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#steps-checklists-tab">HMDA Steps/Checklists</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body tab-content" x-data="{ errors: {} }">
+                <!-- Tab 1: HMDA Job Details -->
+                <div class="tab-pane fade show active" id="job-details-tab">
+                    <form @submit.prevent="confirmJobDetails">
+                        <div class="row">
+                            <!-- Display job details as read-only fields -->
+                            <div class="col-md-6">
+                                {{ ffm.render_text_field(form.name, kwargs={'disabled': True, 'x-model': 'form.name' }) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ ffm.render_date_field(form.start_time, kwargs={ 'disabled': True, 'x-model': 'form.start_time' }) }}
+                            </div>
+                            <div class="col-md-6 mt-1">
+                                {{ ffm.render_select_field(form.workflow_type, kwargs={ 'disabled': True, 'x-model': 'form.workflow_type' }) }}
+                            </div>
+                            <div class="col-md-6 mt-1">
+                                {{ ffm.render_select_field(form.workflow_id, kwargs={ 'disabled': True, 'x-model': 'form.workflow_id' }) }}
+                            </div>
+                            <div class="col-md-12 mt-1">
+                                {{ ffm.render_textarea_field(form.description, kwargs={ 'readonly': True, 'x-model': 'form.description' }) }}
+                            </div>
+                        </div>
+                        <!-- Optional submit button -->
+                        <div class="d-flex mt-3">
+                            <button type="submit" class="btn btn-primary ms-auto">
+                                Confirm Job Details
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tab 2: HMDA Steps/Checklists -->
+                <div class="tab-pane fade" id="steps-checklists-tab">
+                    <div class="table-responsive">
+                        <table class="table table-bordered mb-0 mt-0">
+                            <thead>
+                                <tr>
+                                    <th class="col-md-1">Order</th>
+                                    <th class="col-md-5">Step Name</th>
+                                    <th class="col-md-1">Schedule Type</th>
+                                    <th class="col-md-1">Start Time</th>
+                                    <th class="col-md-1">Completed Time</th>
+                                    <th class="col-md-1">Retries</th>
+                                    <th class="col-md-1">Status</th>
+                                    <th class="col-md-1">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="step in workflowSteps" :key="step.order">
+                                    <tr>
+                                        <td x-text="step.order"></td>
+                                        <td x-text="step.name"></td>
+                                        <td x-text="{
+                                            'Automated': '📅 Automated',
+                                            'Weekly': '📆 Weekly',
+                                            'Monthly': '🗓 Monthly',
+                                            'Manual': '⏳ Manual'
+                                        }[step.schedule_type]"></td>
+                                        <td x-text="step.started_at"></td>
+                                        <td x-text="step.completed_at"></td>
+                                        <td x-text="step.retries"></td>
+                                        <td>
+                                            <span :class="{
+                                                'badge bg-success text-green-fg': step.status === 'Completed',
+                                                'badge bg-warning text-blue-fg': step.status !== 'Completed'
+                                            }" x-text="step.status"></span>
+                                        </td>
+                                        <td>
+                                            <a class="btn btn-icon" @click.prevent="executeJob(step)" title="Execute Job">
+                                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                                                    <use xlink:href="{{ url_for('static', filename='icons/play.svg') }}#play" />
+                                                </svg>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Job Modal -->
+    <div class="modal fade" id="manualJobModal" tabindex="-1" x-show="showManualModal" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Manual Job Status</h5>
+                    <button type="button" class="btn-close" @click="closeModals"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Set Job Status</label>
+                    <select class="form-select" x-model="selectedJobStep.status">
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Failed">Failed</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @click="closeModals">Cancel</button>
+                    <button type="button" class="btn btn-primary ms-auto" @click="saveManualJobStatus">Save Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Automated Job Confirmation Modal -->
+    <div class="modal fade" id="autoJobModal" tabindex="-1" x-show="showAutoModal" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Auto Job Triggered</h5>
+                    <button type="button" class="btn-close" @click="closeModals"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Automated job <strong x-text="selectedJobStep.name"></strong> has been triggered successfully.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @click="closeModals">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function hmdaViewForm() {
+    return {
+        form: {
+            name: "{{ hmda_job.name }}",
+            start_time: "{{ hmda_job.start_time }}",
+            workflow_type: "{{ hmda_job.workflow_type }}",
+            workflow_id: "{{ hmda_job.workflow_id }}",
+            description: "{{ hmda_job.description }}"
+        },
+        workflowSteps: JSON.parse(`{{ hmda_job.steps | tojson | safe }}`),
+        message: null,
+        showManualModal: false,
+        showAutoModal: false,
+        selectedJobStep: {
+            name: '',
+            schedule_type: '',
+            status: '',
+            order: ''
+        },
+        
+        executeJob(step) {
+            this.selectedJobStep = step;
+            if (step.schedule_type === 'Manual') {
+                const modalEl = document.getElementById('manualJobModal');
+                const modalInstance = new bootstrap.Modal(modalEl, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                modalInstance.show();
+            } else if (step.schedule_type === 'Automated') {
+                const modalEl = document.getElementById('autoJobModal');
+                const modalInstance = new bootstrap.Modal(modalEl, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                modalInstance.show();
+                // Additional logic for triggering automated jobs can be added here
+            }
+        },
+
+        saveManualJobStatus() {
+            // Logic to save manual job status to the backend
+            const stepIndex = this.workflowSteps.findIndex(t => t.order === this.selectedJobStep.order);
+            if (stepIndex !== -1) {
+                this.workflowSteps[stepIndex] = { ...this.selectedJobStep };
+            }
+            this.showMessage('success', `Job status updated to "${this.selectedJobStep.status}" for ${this.selectedJobStep.name}.`);
+            this.closeModals();
+        },
+
+        closeModals() {
+            ['manualJobModal', 'autoJobModal'].forEach(modalId => {
+                const modalEl = document.getElementById(modalId);
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            });
+            this.selectedJobStep = {
+                name: '',
+                schedule_type: '',
+                status: ''
+            };
+        },
+
+        confirmJobDetails() {
+            this.showMessage('success', 'Job details confirmed.');
+        },
+
+        showMessage(type, text) {
+            this.message = { type, text };
+            setTimeout(() => {
+                this.message = null;
+            }, 3000);
+        }
+    };
+}
+</script>
+{% endblock %}

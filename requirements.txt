@@ -7,3 +7,5 @@ Flask-SQLAlchemy>=3.1.0             # for database suupport with Flask
 Flask-Migrate>=4.0.0                # for database migrations
 python-dotenv>=1.0.0                # for environment variables
 Flask-WTF>=1.2.0                    # for form handling
+dramatiq>=1.17.0                    # for background jobs (use celery in future)
+dramatiq-pg>=0.12.0                 # for backgroun jobs (use celery in future)

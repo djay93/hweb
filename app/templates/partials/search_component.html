@@ -1,0 +1,50 @@
+<div class="d-inline-block" x-data="searchComponent('{{ search_action_url }}')">
+    <div class="d-flex">
+        <form method="get" :action="actionUrl" x-ref="searchForm">
+            <div class="input-group input-group-flat">
+                <input class="form-control"
+                    type="search"
+                    name="search"
+                    x-model="searchText"
+                    placeholder="Enter search text..."
+                    aria-label="Search"
+                    @input="handleInput">
+
+                <!-- Clear button -->
+                <span class="input-group-text" x-show="searchText.length > 0">
+                    <a class="link-secondary" @click.prevent="clearSearch">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" style="height: 1rem; width: 1rem; vertical-align: middle;">
+                            <use xlink:href="{{ url_for('static', filename='icons/close.svg') }}#close"/>
+                        </svg>
+                    </a>
+                </span>
+
+                <button class="btn btn-icon" type="submit" :disabled="searchText.length === 0">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                        <use xlink:href="{{ url_for('static', filename='icons/search.svg') }}#search"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function searchComponent(actionUrl) {
+        return {
+            searchText: "{{ request.args.get('search', '') }}",
+            actionUrl: actionUrl,
+
+            handleInput(event) {
+                this.searchText = event.target.value.trim();
+            },
+
+            clearSearch() {
+                this.searchText = '';
+                const url = new URL(window.location);
+                url.searchParams.delete('search');
+                window.location.href = url.toString();
+            }
+        };
+    }
+</script>

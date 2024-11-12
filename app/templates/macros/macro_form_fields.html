@@ -23,6 +23,7 @@
             {% elif field_type == 'select' %}
                 <select class="form-select {% if field.errors %}is-invalid{% endif %}" 
                         name="{{ name or field.name }}"
+                        id="{{ name or field.name }}"
                         required
                         {% if disabled %}disabled{% endif %}>
                     {# Modified placeholder option #}
@@ -37,6 +38,7 @@
                        class="form-control {% if field.errors %}is-invalid{% endif %}" 
                        name="{{ name or field.name }}" 
                        value="{{ '' if field.data is none else field.data.strftime('%Y-%m-%dT%H:%M') if field.data else '' }}"
+                       id="{{ name or field.name }}"
                        {% if disabled %}disabled{% endif %}>
             
             {% else %}
@@ -44,6 +46,7 @@
                        name="{{ name or field.name }}" 
                        placeholder="{{ placeholder or 'Enter text' }}" 
                        value="{{ '' if field.data is none else field.data }}"
+                       id="{{ name or field.name }}"
                        {% if disabled %}disabled{% endif %}>
             {% endif %}
             

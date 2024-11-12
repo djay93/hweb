@@ -1,0 +1,262 @@
+{% extends 'layouts/base.html' %}
+{% import 'macros/form_field_macros.html' as ffm %}
+
+{% block title %}Compliance Hub - Create New HMDA Process{% endblock %}
+{% block page_title %}
+    Create New HMDA Process
+{% endblock %}
+
+{% block content %}
+<div class="row row-cards justify-content-center" x-data="hmdaForm('{{ form.workflow_type.data }}')">
+    <div class="col-md-12">
+        <!-- Flash Messages -->
+        <template x-if="message">
+            <div :class="`alert alert-${message.type} alert-dismissible fade show mb-3`" role="alert">
+                <span x-text="message.text"></span>
+                <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
+            </div>
+        </template>
+
+        <div class="card">
+            <form id="hmda-form" @submit.prevent="submitForm">
+                {{ form.hidden_tag() }}
+                <div class="card-body" x-data="{ errors: {} }">
+                    <h3>HMDA Job Details</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ ffm.render_text_field(form.name, kwargs={
+                                'x-model': 'form.name',
+                                '@blur': 'validateField("name")'
+                            }) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ ffm.render_date_field(form.next_run_time, kwargs={
+                                'x-model': 'form.next_run_time',
+                                '@blur': 'validateField("next_run_time")'
+                            }) }}
+                        </div>
+                        <div class="col-md-6 mt-1">
+                            {{ ffm.render_select_field(
+                                form.workflow_type, 
+                                kwargs={
+                                    'x-model': 'form.workflow_type',
+                                    'x-bind:disabled': 'true'
+                                }
+                            ) }}
+                        </div>
+                        <div class="col-md-6 mt-1">
+                            {{ ffm.render_select_field(
+                                form.workflow_id, 
+                                kwargs={    
+                                    'x-model': 'form.workflow_id',
+                                    '@blur': 'validateField("workflow_id")',
+                                    'x-on:change': 'fetchWorkflowTasks'
+                                }
+                            ) }}
+                        </div>
+                        <div class="col-md-12 mt-1">
+                            {{ ffm.render_textarea_field(form.description) }}
+                        </div>
+                        
+                        <div class="d-flex">
+                            <button type="button" class="btn btn-secondary" @click="window.location.href = '{{ url_for('hmda.list_hmda_jobs') }}'">Cancel</button>
+                            <button type="submit" class="btn btn-primary ms-auto">
+                                Create HMDA Job
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Workflow Steps -->
+    <div class="col-md-12 mt-4" x-show="workflowTasks.length > 0">
+        <div class="card">
+            <div class="card-body">
+                <h3>HMDA Steps/Checklists</h3>
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0 mt-0">
+                        <thead>
+                            <tr>
+                                <th class="col-md-1">Order</th>
+                                <th class="col-md-2">Step Name</th>
+                                <th class="col-md-2">Task Type</th>
+                                <th class="col-md-5">Meta</th>
+                                <th class="col-md-2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="task in workflowTasks" :key="task.order">
+                                <tr>
+                                    <td x-text="task.order"></td>
+                                    <td x-text="task.name"></td>
+                                    <td>
+                                        <span :class="task.task_type === 'Automated' ? 'badge bg-green text-green-fg' : 'badge bg-blue text-blue-fg'" x-text="task.task_type"></span>
+                                    </td>
+                                    <td x-text="task.meta"></td>
+                                    <td>
+                                        <button class="btn btn-icon" @click="openStepModal(task)" title="Delete Job">
+                                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                                                <use xlink:href="{{ url_for('static', filename='icons/pencil.svg') }}#pencil" />
+                                            </svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals-->
+
+    <!-- Job Step Edit Modal -->
+    <div class="modal fade" id="editJobStepModal" tabindex="-1" style="display: none;" x-show="editingJobStep !== null">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Job Step</h5>
+                    <button type="button" class="btn-close" @click="closeStepModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" x-model="editingJobStep.name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Meta</label>
+                        <textarea class="form-control" x-model="editingJobStep.meta"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @click="closeStepModal">Cancel</button>
+                    <button type="button" class="btn btn-primary ms-auto" @click="saveStepChanges">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function hmdaForm(workflowType) {
+    return {
+        form: {
+            name: '',
+            next_run_time: '',
+            workflow_type: workflowType || 'HMDA',
+            workflow_id: null,
+            description: '',
+        },
+        workflowTasks: [],
+        message: null,
+        errors: {},
+        editingJobStep: {
+            name: '',
+            meta: ''
+        },
+
+        validationRules: {
+            name: {
+                required: true,
+                minLength: 3,
+                message: 'Name must be at least 3 characters'
+            },
+            next_run_time: {
+                required: true,
+                message: 'Next run time is required'
+            },
+            workflow_id: {
+                required: true,
+                message: 'Workflow must be selected'
+            }
+        },
+
+        init() {
+            // Ensure compatibility between Alpine.js and Bootstrap
+            // const modalEl = document.getElementById('editJobStepModal');
+            // modalEl.addEventListener('hidden.bs.modal', () => {
+            //     this.showStepModal = false;
+            // });
+        },
+
+        validateField(fieldName) {
+            const rules = this.validationRules[fieldName];
+            const value = this.form[fieldName];
+
+            // Skip validation if no rules exist for this field
+            if (!rules) return true;
+            
+            if (rules.required && (!value || value.trim() === '')) {
+                this.errors[fieldName] = rules.message || `${fieldName} is required`;
+                return false;
+            }
+
+            if (rules.minLength && value.length < rules.minLength) {
+                this.errors[fieldName] = rules.message;
+                return false;
+            }
+
+            delete this.errors[fieldName];
+            return true;
+        },
+
+        fetchWorkflowTasks() {
+            if (this.form.workflow_id) {
+                fetch(`/api/workflows/${this.form.workflow_id}/tasks`)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.workflowTasks = data.tasks || [];
+                    })
+                    .catch(error => {
+                        console.error('Error fetching workflow tasks:', error);
+                        this.showMessage('danger', 'Failed to load workflow tasks.');
+                    });
+            } else {
+                this.workflowTasks = [];
+            }
+        },
+
+        openStepModal(step) {
+            this.editingJobStep = { ...step };
+            const modalEl = document.getElementById('editJobStepModal');
+            const modalInstance = new bootstrap.Modal(modalEl, {
+                backdrop: 'static',
+                keyboard: false
+            });
+            modalInstance.show();
+        },
+
+        closeStepModal() {
+            const modalEl = document.getElementById('editJobStepModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+            this.editingJobStep = {};
+        },
+
+        saveStepChanges() {
+            const stepIndex = this.workflowTasks.findIndex(t => t.order === this.editingJobStep.order);
+            if (stepIndex !== -1) {
+                this.workflowTasks[stepIndex] = { ...this.editingJobStep };
+            }
+            this.closeStepModal();
+        },
+
+        showMessage(type, text) {
+            this.message = { type, text };
+            setTimeout(() => {
+                this.message = null;
+            }, 3000);
+        }
+    };
+}
+
+</script>
+{% endblock %}

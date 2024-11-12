@@ -3,7 +3,6 @@ from wtforms import StringField, TextAreaField, SelectField, HiddenField
 from wtforms.validators import DataRequired
 from app.models.enum import WorkflowType 
 
-
 class WorkflowForm(FlaskForm):
     id = HiddenField('ID')
     name = StringField('Name', validators=[DataRequired()])

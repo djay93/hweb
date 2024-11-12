@@ -1,161 +1,312 @@
 {% extends 'layouts/base.html' %}
 
-{% block meta_title %}Dashboard{% endblock %}
+{% block title %}Compliance Hub - Dashboard{% endblock %}
+{% block page_title %}
+    Dashboard
+{% endblock %}
 
 {% block content %}
-    <!-- Alert for Danger Message -->
-    {% if msg %}
-    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
-        <strong>Danger!</strong> 
-        {% if msg.url %}
-            <a href="{{ msg.url }}">{{ msg.text }}</a>
-        {% else %}
-            {{ msg.text }}
-        {% endif %}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+<div x-data="dashboardData()">
+    <!-- Alerts -->
+    <template x-if="message.type">
+        <div :class="`alert alert-${message.type} alert-dismissible fade show mb-3`" role="alert">
+            <strong x-text="message.title"></strong>
+            <span x-text="message.text"></span>
+            <button type="button" class="btn-close" @click="closeAlert" aria-label="Close"></button>
+        </div>
+    </template>
 
-    <!-- Alert for Warning Message -->
-    <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
-        <strong>Warning:</strong> 
-        {% if msg.url %}
-            <a href="{{ msg.url }}">{{ msg.text }}</a>
-        {% else %}
-            {{ msg.text }}
-        {% endif %}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endif %}
-
+    <!-- Dashboard Metrics -->
     <div class="row row-deck row-cards">
-        <!-- Card for Client Statuses -->
-        <div class="col-sm-6 col-lg-4">
-            <a href="#" class="card card-sm">
-                <div class="card-body">
-                    <span class="position-absolute top-0 translate-middle badge rounded-pill bg-danger text-light">1</span>
-                    <div class="row align-items-center">
-                        <div class="col-auto">
-                            <span class="bg-blue text-white avatar">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-body card-hover">
+                <div class="d-flex">
+                    <div class="row align-items-center my-3">
+                        <div class="col-auto mx-2">
+                            <span class="bg-green text-white avatar">
                                 <svg class="icon">
-                                    <use xlink:href="{{ url_for('static', filename='icons/contacts.svg') }}#contacts" />
+                                    <use xlink:href="{{ url_for('static', filename='icons/notes.svg') }}#notes" />
                                 </svg>
                             </span>
                         </div>
                         <div class="col">
-                            <div class="font-weight-medium">100 HMDA Reports</div>
-                            <div class="text-muted">1 Active</div>
+                            <h6 class="mb-0">Total Reports Generated</h6>
+                            <div class="h2 mb-0" x-text="totalReports"></div>
                         </div>
                     </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-sm-6 col-lg-4">
-            <a href="#" class="card card-sm">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-auto">
-                            <span class="bg-blue text-white avatar">
-                                <svg class="icon">
-                                    <use xlink:href="{{ url_for('static', filename='icons/contacts.svg') }}#contacts" />
-                                </svg>
-                            </span>
-                        </div>
-                        <div class="col">
-                            <div class="font-weight-medium">20 EWRA Reports</div>
-                            <div class="text-muted">1 Active</div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-sm-6 col-lg-4">
-            <a href="#" class="card card-sm">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-auto">
-                            <span class="bg-blue text-white avatar">
-                                <svg class="icon">
-                                    <use xlink:href="{{ url_for('static', filename='icons/contacts.svg') }}#contacts" />
-                                </svg>
-                            </span>
-                        </div>
-                        <div class="col">
-                            <div class="font-weight-medium">2 Workflow Automations</div>
-                            <div class="text-muted">1 Active</div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <!-- Tabs for Recent Activity -->
-        <div class="col-12 d-block">
-            <ul class="nav nav-tabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link active" href="#tab-index" role="tab" data-bs-toggle="tab">Recent User Activity</a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" href="#tab-staff" role="tab" data-bs-toggle="tab">Recent HMDA Activity</a>
-                </li>
-            </ul>
-
-            <div class="card">
-                <div class="tab-content" id="tabs">
-                    <!-- Tab Pane for Client Activity -->
-                    <div class="tab-pane fade show active" id="tab-index" role="tabpanel">
-                        <table class="table table-vcenter card-table table-striped">
-                            <tbody>
-                                {% for event in client_events %}
-                                <tr>
-                                    <td class="w-1">
-                                        <a href="/">
-                                            <span class="avatar avatar-xs" style="background-image: url({{ event.client.email }}&size=24)"></span>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <a href="/">{{ event.client.name[:40] }}</a>
-                                    </td>
-                                    <td>{{ event.message[:50] }}</td>
-                                    <td>{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                                    <td>{{ (now - event.created_at).total_seconds() // 3600 }} hours ago</td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td class="text-muted" colspan="4">The list is empty</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Tab Pane for Staff Activity -->
-                    <div class="tab-pane fade" id="tab-staff" role="tabpanel">
-                        <table class="table table-vcenter card-table table-striped">
-                            <tbody>
-                                {% for event in staff_events %}
-                                <tr>
-                                    <td class="w-1">
-                                        <a href="#">
-                                            <span class="avatar avatar-xs" style="background-image: url({{ event.staff.email }}&size=24)"></span>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <a href="#">{{ event.staff.name }}</a>
-                                    </td>
-                                    <td>{{ event.message[:50] }}</td>
-                                    <td>{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                                    <td>{{ (now - event.created_at).total_seconds() // 3600 }} hours ago</td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td class="text-muted" colspan="5">The list is empty</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="ms-auto d-flex align-items-center">
+                        <span class="text-green d-inline-flex align-items-center lh-1">15%
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon ms-1">
+                                <path d="M3 17l6 -6l4 4l8 -8"></path>
+                                <path d="M14 7l7 0l0 7"></path>
+                            </svg>
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-body card-hover">
+                <!-- <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger text-light" x-text="activeCount"></span> -->
+                <div class="d-flex">
+                    <div class="row align-items-center my-3">
+                        <div class="col-auto mx-2">
+                        <span class="bg-orange text-white avatar">
+                            <svg class="icon">
+                                <use xlink:href="{{ url_for('static', filename='icons/clock.svg') }}#clock" />
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <h6 class="mb-0">Average Completion Time</h6>
+                        <div class="h2 mb-0" x-text="averageCompletionTime"></div>
+                    </div>
+                </div>
+                <div class="row ms-auto align-items-center">
+                    <span class="text-green d-inline-flex align-items-center lh-1">5% 
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24">
+                            <use xlink:href="{{ url_for('static', filename='icons/trending-up.svg') }}#trending-up" />
+                        </svg>
+                    </span>
+                </div>
+                </div>  
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-body card-hover">
+                <!-- <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger text-light" x-text="activeCount"></span> -->
+                <div class="d-flex">
+                    <div class="row align-items-center my-3">
+                        <div class="col-auto mx-2">
+                        <span class="bg-purple text-white avatar">
+                            <svg class="icon">
+                                <use xlink:href="{{ url_for('static', filename='icons/pic.svg') }}#pic" />
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <h6 class="mb-0">Success Rate</h6>
+                        <div class="h2 mb-0" x-text="successRate"></div>
+                    </div>
+                </div>
+                <div class="row ms-auto align-items-center">
+                    <span class="text-green d-inline-flex align-items-center lh-1">7% 
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24">
+                            <use xlink:href="{{ url_for('static', filename='icons/trending-up.svg') }}#trending-up" />
+                        </svg>
+                    </span>
+                </div>
+                </div>  
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3" x-data="{ reportsCount: 100, activeCount: 1 }">
+            <div class="card card-body card-hover">
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger text-light" x-text="activeCount"></span>
+                <div class="d-flex">
+                    <div class="row align-items-center my-3">
+                        <div class="col-auto mx-2">
+                        <span class="bg-yellow text-white avatar">
+                            <svg class="icon">
+                                <use xlink:href="{{ url_for('static', filename='icons/eye.svg') }}#eye" />
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <h6 class="mb-0">Active Users</h6>
+                        <div class="h2 mb-0" x-text="activeUsers"></div>
+                    </div>
+                </div>
+                <div class="row ms-auto align-items-center">
+                    <span class="text-green d-inline-flex align-items-center lh-1">7% 
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24">
+                            <use xlink:href="{{ url_for('static', filename='icons/trending-up.svg') }}#trending-up" />
+                        </svg>
+                    </span>
+                </div>
+                </div>  
+            </div>
+        </div>
+        
     </div>
+
+    <!-- Visualizations Section -->
+    <div class="row row-deck row-cards mt-4">
+        <!-- Report Completion Trends Line Chart -->
+        <div class="col-sm-6 mt-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <h3>Report Completion Trends</h3>
+                        <div class="ms-auto lh-1">
+                            <div class="dropdown">
+                                <a class="dropdown-toggle text-secondary" href="#" data-bs-toggle="dropdown">Last 7 days</a>
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a class="dropdown-item active" href="#">Last 7 days</a>
+                                    <a class="dropdown-item" href="#">Last 30 days</a>
+                                    <a class="dropdown-item" href="#">Last 3 months</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="completionTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Status Distribution Pie Chart -->
+        <div class="col-sm-6 mt-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <h3>Job Status Distribution</h3>
+                        <div class="ms-auto lh-1">
+                            <div class="dropdown">
+                                <a class="dropdown-toggle text-secondary" href="#" data-bs-toggle="dropdown">Last 7 days</a>
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a class="dropdown-item active" href="#">Last 7 days</a>
+                                    <a class="dropdown-item" href="#">Last 30 days</a>
+                                    <a class="dropdown-item" href="#">Last 3 months</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="jobStatusChart" style="max-height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Events Table -->
+    <div class="col-12 mt-4">
+        <div class="card">
+            <div class="card-body">
+                <h3>Recent Activity</h3>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-striped">
+                        <thead>
+                            <tr>
+                                <th class="w-1">ID</th>
+                                <th>User</th>
+                                <th>Activity</th>
+                                <th>Date</th>
+                                <th>Workflow Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="event in activityEvents" :key="event.id">
+                                <tr>
+                                    <td class="w-1" x-text="event.id"></td>
+                                    <td>
+                                        <a href="#" x-text="event.user.name.slice(0, 40)"></a>
+                                    </td>
+                                    <td x-text="event.message.slice(0, 50)"></td>
+                                    <td x-text="formatDate(event.created_at)"></td>
+                                    <td x-text="event.type"></td>
+                                </tr>
+                            </template>
+                            <tr x-show="activityEvents.length === 0">
+                                <td class="text-muted" colspan="5">The list is empty</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function dashboardData() {
+    return {
+        message: {
+            type: "{{ msg.type if msg else '' }}",
+            title: "{{ msg.title if msg else '' }}",
+            text: "{{ msg.text if msg else '' }}"
+        },
+        
+        activityEvents: [
+            {
+                id: 1,
+                user: { name: 'John Smith', email: 'https://gravatar.com/avatar/1' },
+                message: 'Completed compliance report for Q1 2024',
+                created_at: '2024-03-20T10:30:00',
+                type: 'HMDA'
+            },
+            // Add more activity events as needed
+        ],
+        totalReports: 129,
+        averageCompletionTime: '10.2 mins',
+        successRate: '85%',
+        activeUsers: 45,
+        
+        closeAlert() {
+            this.message.type = '';
+        },
+        
+        formatDate(date) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(date).toLocaleDateString(undefined, options);
+        }
+    };
+}
+
+// Initialize Chart.js charts
+document.addEventListener('alpine:init', () => {
+    const completionTrendCtx = document.getElementById('completionTrendChart').getContext('2d');
+    new Chart(completionTrendCtx, {
+        type: 'line',
+        data: {
+            labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+            datasets: [{
+                label: 'Completed Reports',
+                data: [10, 20, 15, 30, 25, 35, 40],
+                fill: true,
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: '#3498db',
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: { enabled: true, backgroundColor: '#333', titleColor: '#fff', bodyColor: '#fff' }
+            },
+            scales: {
+                x: { display: true, title: { display: true, text: 'Days' }},
+                y: { display: true, title: { display: true, text: 'Reports Completed' }, beginAtZero: true }
+            }
+        }
+    });
+
+    const jobStatusCtx = document.getElementById('jobStatusChart').getContext('2d');
+    new Chart(jobStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'In Progress', 'Failed'],
+            datasets: [{
+                data: [60, 25, 15],
+                backgroundColor: ['#27ae60', '#f39c12', '#e74c3c'],
+                hoverOffset: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true, position: 'right' },
+                tooltip: { enabled: true, backgroundColor: '#333', titleColor: '#fff', bodyColor: '#fff' }
+            },
+            cutout: '50%' // for a doughnut effect
+        }
+    });
+});
+</script>
 {% endblock %}

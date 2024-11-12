@@ -4,4 +4,15 @@ home_bp = Blueprint('home', __name__)
 
 @home_bp.route('/home', methods=['GET'])
 def index():
-    return render_template('dashboard.html')
+    """
+    Display the dashboard.
+    """
+    activity_logs = []
+    return render_template('dashboard.html', activity_logs=activity_logs)
+
+
+# Home route
+@home_bp.route('/')
+def home():
+    return "App is up & running!"
+    

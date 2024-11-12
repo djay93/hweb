@@ -1,0 +1,7 @@
+{% macro render_icon_button(icon_name, url="#", title="") %}
+    <a class="btn btn-icon" href="{{ url }}" title="{{ title }}">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+            <use xlink:href="{{ url_for('static', filename='icons/' + icon_name + '.svg') }}#{{ icon_name }}" />
+        </svg>
+    </a>
+{% endmacro %}

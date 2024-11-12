@@ -1,6 +1,6 @@
 from flask import Blueprint, request, render_template, redirect, url_for, jsonify, flash
 from app.services import WorkflowService
-from app.forms.workflow import WorkflowForm
+from app.forms.workflow_form import WorkflowForm
 from app.models.enum import WorkflowType
 
 workflow_bp = Blueprint('workflows', __name__)
@@ -55,7 +55,7 @@ def edit_workflow(workflow_id):
         try:
             # Update the workflow
             WorkflowService.update_workflow(
-                id=workflow_id,
+                workflow_id=workflow_id,
                 name=form.name.data,
                 description=form.description.data,
                 workflow_type=form.workflow_type.data
@@ -106,4 +106,16 @@ def api_delete_workflow(workflow_id):
         WorkflowService.delete_workflow(workflow_id)
         return jsonify({'message': 'Workflow deleted successfully'}), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    
+@workflow_api_bp.route('/<int:workflow_id>/tasks', methods=['GET'])
+def api_get_workflow_tasks(workflow_id):
+    try:
+        tasks = WorkflowService.get_workflow_tasks(workflow_id)
+        return jsonify({
+            'message': 'No tasks found' if not tasks else 'Tasks retrieved successfully',
+            'tasks': [task.to_dict() for task in tasks]
+        }), 200
+    except Exception as e:
+        print(e)
         return jsonify({'error': str(e)}), 400

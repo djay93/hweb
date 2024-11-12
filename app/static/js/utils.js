@@ -41,6 +41,7 @@ export async function getAPI(url) {
       window.location.href = response.url;
       return;
     }
+    console.log(response.ok);
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }

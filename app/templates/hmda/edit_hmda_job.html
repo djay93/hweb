@@ -1,0 +1,122 @@
+{% extends 'layouts/base.html' %}
+{% import 'macros/macro_form_fields.html' as mff %}
+{% import 'macros/form_field_macros.html' as fm %}
+
+{% block title %}Compliance Hub - Edit HMDA Weekly Processing{% endblock %}
+{% block page_title %}
+    Edit HMDA Weekly Processing
+{% endblock %}
+
+{% block content %}
+<div class="row row-cards justify-content-center">
+    <div class="col-md-12">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="card">
+            <form method="POST" action="{{ url_for('hmda.edit_hmda_job', hmda_id=hmda_weekly.id) }}">
+                {{ form.csrf_token }}
+                <div class="card-body">
+                    <h3>HMDA Details</h3>
+                    <div class="row">
+                        <!-- Week Name -->
+                        <div class="col-md-6">
+                            {{ fm.render_text_field(form.name, placeholder='HMDA Week - mm/dd/yyyy') }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ fm.render_date_field(form.next_run_time) }}
+                        </div>
+                        <div class="col-md-6 mt-1">
+                            {{ fm.render_select_field(form.workflow_type, disabled=True) }}
+                        </div>
+                        <div class="col-md-6 mt-1">
+                            {{ fm.render_select_field(form.workflow_id, disabled=True) }}
+                        </div>
+                        <div class="col-md-12 mt-1">
+                            {{ fm.render_textarea_field(form.description) }}
+                        </div>
+                        <div>
+                            {{form.job_steps}}
+                        </div>
+                        <div class="d-flex">
+                            <button type="submit" class="btn btn-primary ms-auto">
+                                Save Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>       
+        </div>
+    </div>
+
+    <!--- Workflow Steps  -->
+    <div class="col-md-12">
+        <div id="workflow-steps-card" class="card" style="display: none;">
+            <div class="card-body">
+                <h3>HMDA Steps/Checklists</h3>
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0 mt-0">
+                        <thead>
+                            <tr>
+                                <th class="col-md-1">Order</th>
+                                <th class="col-md-3">Step Name</th>
+                                <th class="col-md-2">Task Type</th>
+                                <th class="col-md-6">Meta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workflow-steps-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+import { getAPI } from '{{ url_for("static", filename="js/utils.js") }}';
+
+document.getElementById('workflow_id').addEventListener('change', async function() {
+    const workflowId = this.value;
+    const stepsDiv = document.getElementById('workflow-steps-card');
+    const stepsBody = document.getElementById('workflow-steps-body');
+    
+    if (workflowId) {
+        const data = await getAPI(`/api/workflows/${workflowId}/tasks`);
+
+        // Clear existing content
+        stepsBody.innerHTML = '';   
+
+        // Add each task to the table
+        if (data.tasks.length > 0) {
+            data.tasks.forEach((task, index) => {
+                stepsBody.innerHTML += `
+                    <tr>
+                        <td>${task.order}</td>
+                        <td>${task.name}</td>
+                        <td>
+                            <span class="${task.task_type === 'Automated' ? 'badge bg-green text-green-fg' : 'badge bg-blue text-blue-fg'}">${task.task_type || ''}</span>
+                        </td>
+                        <td>${task.meta || ''}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Show the table
+        stepsDiv.style.display = 'block';
+    } else {
+        stepsDiv.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

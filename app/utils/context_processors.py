@@ -7,8 +7,8 @@ class ContextProcessors:
                 'label': 'HMDA',
                 'class': 'graphs',
                 'subpages': [
-                    {'label': 'View Weekly Reports', 'url': 'hmda.list_hmda_weekly_reports', 'external': False},
-                    {'label': 'Add Weekly Process', 'url': 'hmda.new_hmda_weekly_report', 'external': False},
+                    {'label': 'View Weekly Reports', 'url': 'hmda.list_hmda_jobs', 'external': False},
+                    {'label': 'Add Weekly Process', 'url': 'hmda.new_hmda_job', 'external': False},
                 ]
             },
             {

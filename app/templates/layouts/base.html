@@ -22,6 +22,10 @@
     
     <!-- Tabler CSS -->
     <link href="{{ url_for('static', filename='css/tabler.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+
+    <!--Alpine JS-->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </head>
 <body>
     <div class="page">
@@ -72,5 +76,6 @@
     
     <!-- Tabler JS -->
     <script src="{{ url_for('static', filename='js/tabler.min.js') }}"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
