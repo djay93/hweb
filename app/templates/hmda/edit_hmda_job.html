@@ -39,7 +39,7 @@
                                 <label for="workflow_type" class="form-label">Workflow Type</label>
                                 <select name="workflow_type" x-model="form.workflow_type" @blur="validateField('workflow_type')" disabled :class="errors['workflow_type'] ? 'form-select is-invalid' : 'form-select'">
                                     <template x-for="option in options.workflow_type_options" :key="option.name">
-                                        <option :value="option.name" x-text="option.value"></option>
+                                        <option :value="option.name" :selected="option.name === form.workflow_type" x-text="option.value"></option>
                                     </template>
                                 </select>
                             </div>
@@ -49,13 +49,11 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="workflow_id" class="form-label">Workflow</label>
-                                <select name="workflow_id" x-model="form.workflow_id" @blur="validateField('workflow_id')" x-on:change="fetchWorkflowTasks" :class="errors['workflow_id'] ? 'form-select is-invalid' : 'form-select'  ">
-                                    <option value="" selected>Select a workflow</option>
+                                <select name="workflow_id" x-model="form.workflow_id" @blur="validateField('workflow_id')" x-on:change="fetchWorkflowTasks" disabled :class="errors['workflow_id'] ? 'form-select is-invalid' : 'form-select'">
                                     <template x-for="option in options.workflow_options" :key="option.id">
-                                        <option :value="option.id" x-text="option.name"></option>
+                                        <option :value="option.id" :selected="option.id === form.workflow_id" x-text="option.name"></option>
                                     </template>
                                 </select>
-                                <div x-cloak x-show="errors['workflow_id']" class="invalid-feedback" x-text="errors['workflow_id']"></div>
                             </div>
                         </div>
 
@@ -65,7 +63,7 @@
                                 <label for="status" class="form-label">Status</label>
                                 <select name="status" x-model="form.status" @blur="validateField('status')" disabled :class="errors['status'] ? 'form-select is-invalid' : 'form-select'">
                                     <template x-for="option in options.status_options" :key="option.name">
-                                        <option :value="option.name" x-text="option.value"></option>
+                                        <option :value="option.name" :selected="option.name === form.status" x-text="option.value"></option>
                                     </template>
                                 </select>
                             </div>
@@ -75,7 +73,13 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="next_run_time" class="form-label">Scheduled Run Time</label>
-                                <input type="date" name="next_run_time" x-model="form.next_run_time" @blur="validateField('next_run_time')" placeholder="Enter schedule date" :class="errors['next_run_time'] ? 'form-control is-invalid' : 'form-control'">
+                                <input type="date" 
+                                       name="next_run_time" 
+                                       x-model="form.next_run_time" 
+                                       @blur="validateField('next_run_time')" 
+                                       placeholder="Enter schedule date" 
+                                       :disabled="!['New', 'Failed'].includes(form.status)"
+                                       :class="errors['next_run_time'] ? 'form-control is-invalid' : 'form-control'">
                                 <div x-cloak x-show="errors['next_run_time']" class="invalid-feedback" x-text="errors['next_run_time']"></div>
                             </div>
                         </div>
@@ -104,7 +108,7 @@
         </div>
     </div>
 
-    <!-- Workflow Steps -->
+    <!-- Job Tasks -->
     <div class="col-md-12 mt-4">
         <div class="card">
             <div class="card-body">
@@ -113,24 +117,37 @@
                     <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>Step Name</th>
-                                <th>Type</th>
-                                <th>Status</th>
+                                <th>Order</th>
+                                <th class="col-md-6">Task Name</th>
+                                <th class="col-md-1">Task Type</th>
+                                <th class="col-md-1">Status</th>
+                                <th class="col-md-1">Started At</th>
+                                <th class="col-md-1">Completed At</th>
+                                <th>Retries</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="step in form.steps" :key="step.order">
+                            <template x-for="task in form.tasks" :key="task.id">
                                 <tr>
-                                    <td x-text="step.order"></td>
-                                    <td x-text="step.name"></td>
-                                    <td x-text="step.job_task_type"></td>
+                                    <td x-text="task.order"></td>
+                                    <td x-text="task.name"></td>
+                                    <td x-text="task.job_task_type"></td>
                                     <td>
-                                        <span :class="step.status === 'Completed' ? 'badge bg-success' : 'badge bg-warning'" x-text="step.status"></span>
+                                        <span :class="task.status === 'Completed' ? 'badge bg-success' : 'badge bg-warning'" x-text="task.status"></span>
                                     </td>
+                                    <td x-text="task.started_at"></td>
+                                    <td x-text="task.completed_at"></td>
+                                    <td x-text="task.retries"></td>
                                     <td>
-                                        <button class="btn btn-sm btn-primary" @click="editStep(step)">Edit</button>
+                                        <button class="btn btn-icon" 
+                                                @click="openTaskModal(task)" 
+                                                :disabled="!['NEW', 'FAILED', 'PENDING'].includes(task.status)"
+                                                :title="['NEW', 'FAILED', 'PENDING'].includes(task.status) ? 'Edit Task' : 'Cannot edit task in current status'">
+                                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                                                <use xlink:href="{{ url_for('static', filename='icons/pencil.svg') }}#pencil" />
+                                            </svg>
+                                        </button>
                                     </td>
                                 </tr>
                             </template>
@@ -140,25 +157,86 @@
             </div>
         </div>
     </div>
+
+    <!-- Job Task Edit Modal -->
+    <div class="modal fade" id="editJobTaskModal" tabindex="-1" style="display: none;" x-show="editingJobTask !== null">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Job Task</h5>
+                    <button type="button" class="btn-close" @click="closeTaskModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" x-model="editingJobTask.name">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Task Type</label>
+                                <select name="status" class="form-select" x-model="editingJobTask.job_task_type">
+                                    <template x-for="option in options.task_type_options" :key="option.name">
+                                        <option :value="option.name" :selected="option.name === editingJobTask.job_task_type" x-text="option.value"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Meta (JSON)</label>
+                        <div id="jsonEditor" class="border rounded p-2"></div>
+                        <div x-show="metaError" class="text-danger mt-2">
+                            <small x-text="metaError"></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @click="closeTaskModal">Cancel</button>
+                    <button type="button" class="btn btn-primary ms-auto" @click="saveTaskChanges">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 function hmdaEditForm(initialData, formOptions) {
+    console.log('Initial data:', initialData);
     return {
         csrfToken: document.querySelector('input[name="csrf_token"]').value,
         form: { ...initialData },
         options: {
             workflow_type_options: formOptions.workflow_type_options || [],
             status_options: formOptions.status_options || [],
-            workflow_options: formOptions.workflow_options || []
+            workflow_options: formOptions.workflow_options || [],
+            task_type_options: formOptions.task_type_options || [],
         },
         message: null,
+        editingJobTask: {
+            id: null,
+            name: "",
+            job_task_type: "",
+            meta: '{}'
+        },
+        jsonEditor: null,
+        metaError: "",
         errors: {},
 
+        init() {
+            this.jsonEditor = new JSONEditor(document.getElementById('jsonEditor'), {
+                mode: 'code',
+            });
+        },
+
         submitForm() {
-            fetch(`/api/hmda/jobs/${this.form.id}`, {
+            console.log('Submitting form:', this.form);
+            fetch(`/api/hmda/${this.form.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -166,25 +244,71 @@ function hmdaEditForm(initialData, formOptions) {
                 },
                 body: JSON.stringify(this.form),
             })
-                .then(res => res.json())
-                .then(data => {
-                    this.message = { type: 'success', text: 'Job updated successfully.' };
-                    setTimeout(() => (window.location.href = '/hmda/jobs'), 2000);
-                })
-                .catch(err => {
-                    console.error('Failed to update job:', err);
-                    this.message = { type: 'danger', text: 'Failed to update job.' };
-                });
+            .then(res => res.json())
+            .then(data => {
+                this.showMessage('success', data.message);
+                setTimeout(() => {
+                    //window.location.href = '{{ url_for("hmda.list_hmda_jobs") }}';
+                }, 1500);
+            })
+            .catch(err => {
+                console.error('Failed to update job:', err);
+                this.showMessage('danger', 'Failed to update job.');
+            });
         },
 
-        editStep(step) {
-            console.log('Editing step:', step);
-            // Add logic to handle step editing
+        
+        openTaskModal(task) {
+            this.editingJobTask = { ...task };
+            if (this.jsonEditor) {
+                try {
+                    const parsedMeta = task.meta ? JSON.parse(task.meta) : {};
+                    this.jsonEditor.set(parsedMeta);
+                } catch (e) {
+                    console.error('Invalid JSON format:', e);
+                    this.jsonEditor.set({});
+                }
+            }
+
+            const modalEl = document.getElementById('editJobTaskModal');
+            const modalInstance = new bootstrap.Modal(modalEl, {
+                backdrop: 'static',
+                keyboard: false
+            });
+            modalInstance.show();
         },
 
-        cancelEdit() {
-            window.location.href = '/hmda/jobs';
+        closeTaskModal() {
+            const modalEl = document.getElementById('editJobTaskModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
         },
+
+        saveTaskChanges() {
+            try {
+                const jsonData = this.jsonEditor.get();
+                this.editingJobTask.meta = JSON.stringify(jsonData);
+                this.metaError = '';
+            } catch (e) {
+                this.metaError = 'Invalid JSON format.';
+                return;
+            }
+
+            const index = this.form.tasks.findIndex(t => t.id === this.editingJobTask.id);
+            if (index !== -1) {
+                this.form.tasks[index] = { ...this.editingJobTask };
+            }
+            this.closeTaskModal();
+        },
+
+        showMessage(type, text) {
+            this.message = { type, text };
+            setTimeout(() => {
+                this.message = null;
+            }, 3000);
+        }
     };
 }
 </script>

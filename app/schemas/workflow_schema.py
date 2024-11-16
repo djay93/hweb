@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validates, ValidationError, post_dump, post_load
+from marshmallow import Schema, fields, validates, ValidationError
 from app.models.enum import WorkflowType
 from .workflow_task_schema import WorkflowTaskSchema
 
@@ -16,16 +16,3 @@ class WorkflowSchema(Schema):
         if value not in WorkflowType._member_names_:
             raise ValidationError("Invalid workflow type.")
 
-    @post_dump
-    def convert_enums_for_ui(self, data, **kwargs):
-        """Convert Enum name to Enum value for UI display after serialization."""
-        if 'workflow_type' in data:
-            data['workflow_type'] = WorkflowType[data['workflow_type']].value
-        return data
-
-    @post_load
-    def convert_enums_for_storage(self, data, **kwargs):
-        """Convert Enum value to Enum name for storage before deserialization."""
-        if 'workflow_type' in data:
-            data['workflow_type'] = WorkflowType(data['workflow_type']).name
-        return data

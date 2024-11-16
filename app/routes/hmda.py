@@ -1,11 +1,9 @@
 import logging
 import json
-from datetime import datetime
 from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify
 from marshmallow import ValidationError
 from app.services import HMDAService
-from app.forms import HmdaJobDetailsForm
-from app.models.enum import JobStatus, WorkflowType
+from app.models.enum import JobStatus, WorkflowType, TriggerType
 from app.schemas import JobSchema, JobTaskSchema
 
 hmda_bp = Blueprint('hmda', __name__)
@@ -98,6 +96,7 @@ def edit_hmda_job(hmda_id):
         form_options = {
             "workflow_type_options": WorkflowType.choices(),
             "status_options": JobStatus.choices(),
+            "task_type_options": TriggerType.choices(),
             "workflow_options": [{"id": w.id, "name": w.name} for w in HMDAService.get_hmda_workflows()]
         }
 
@@ -142,7 +141,6 @@ def api_create_hmda_job():
         logger.info(f"HMDA Job created successfully with ID {hmda_job.id}.")
 
         # Deserialize, validate, and create job tasks
-        # Update job_id in tasks data and then deserialize/validate
         job_tasks_data = body.get('job_tasks_data', [])
         for task in job_tasks_data:
             task['job_id'] = hmda_job.id
@@ -162,3 +160,46 @@ def api_create_hmda_job():
     except Exception as e:
         logger.error(f"Error creating HMDA process: {str(e)}")
         return jsonify({'error': f'Error creating HMDA process: {str(e)}'}), 500
+
+
+@hmda_api_bp.route('/<int:job_id>', methods=['PUT'])
+def api_update_hmda_job(job_id):
+    body = request.get_json()
+    if not body:
+        logger.warning("Received invalid JSON payload.")
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+
+    try:
+        # Deserialize and validate job data
+        job_data = hmda_job_schema.load(body)
+        logger.info("Validated HMDA job data successfully.")
+
+         # Extract tasks before updating job
+        tasks = job_data.pop('tasks', [])
+
+        # Update the primary job
+        hmda_job = HMDAService.update_hmda_job(job_id, job_data)
+        if not hmda_job:
+            logger.warning(f"HMDA Job with ID {job_id} not found.")
+            return jsonify({'error': 'Job not found'}), 404
+        logger.info(f"HMDA Job {job_id} updated successfully.")
+
+        # Update job tasks
+        if tasks:
+            logger.info(f"tasks: {tasks}")
+            hmda_job_tasks_data = hmda_job_tasks_schema.load(tasks)
+            HMDAService.update_hmda_job_tasks(job_id, hmda_job_tasks_data)
+            logger.info(f"Job tasks for HMDA Job ID {job_id} updated successfully.")
+
+        # Respond with success
+        return jsonify({
+            'message': 'HMDA process updated successfully!',
+            'hmda_job_id': job_id
+        }), 200
+
+    except ValidationError as ve:
+        logger.warning(f"Validation error updating HMDA job: {ve.messages}")
+        return jsonify({'errors': ve.messages}), 400
+    except Exception as e:
+        logger.error(f"Error updating HMDA process: {str(e)}")
+        return jsonify({'error': f'Error updating HMDA process: {str(e)}'}), 500

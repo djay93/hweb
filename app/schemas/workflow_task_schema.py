@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validates, ValidationError, post_dump, post_load
+from marshmallow import Schema, fields, validates, ValidationError
 from app.models.enum import TriggerType
 
 class WorkflowTaskSchema(Schema):
@@ -18,16 +18,3 @@ class WorkflowTaskSchema(Schema):
         if value not in TriggerType._member_names_:
             raise ValidationError("Invalid task type.")
 
-    @post_dump
-    def convert_enums_for_ui(self, data, **kwargs):
-        """Convert Enum name to Enum value for UI display after serialization."""
-        if 'task_type' in data and data['task_type']:
-            data['task_type'] = TriggerType[data['task_type']].value
-        return data
-
-    @post_load
-    def convert_enums_for_storage(self, data, **kwargs):
-        """Convert Enum value to Enum name for storage before deserialization."""
-        if 'task_type' in data and data['task_type']:
-            data['task_type'] = TriggerType(data['task_type']).name
-        return data

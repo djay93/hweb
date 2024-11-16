@@ -1,5 +1,5 @@
 from datetime import datetime
-from marshmallow import Schema, fields, validates, ValidationError, post_dump, post_load, pre_load
+from marshmallow import Schema, fields, validates, ValidationError, pre_load
 from app.models.enum import JobStatus, WorkflowType
 from app.schemas.job_task_schema import JobTaskSchema  
 
@@ -12,7 +12,7 @@ class JobSchema(Schema):
     end_time = fields.DateTime(allow_none=True)
     status = fields.Str(required=True)
     next_run_time = fields.DateTime(format='%Y-%m-%d', required=True)
-    tasks = fields.Nested(JobTaskSchema, many=True, dump_only=True) 
+    tasks = fields.Nested(JobTaskSchema, many=True, required=False) 
 
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
@@ -26,23 +26,13 @@ class JobSchema(Schema):
     def validate_status(self, value):
         if value not in JobStatus._member_names_:
             raise ValidationError("Invalid job status.")
-
-    @post_dump
-    def convert_enums_for_ui(self, data, **kwargs):
-        """Convert Enum name to Enum value for UI display after serialization."""
-        if 'workflow_type' in data:
-            data['workflow_type'] = WorkflowType[data['workflow_type']].value
-        if 'status' in data:
-            data['status'] = JobStatus[data['status']].value
+        
+    @pre_load
+    def remove_readonly_fields(self, data, **kwargs):
+        """Remove read-only fields before loading."""
+        data.pop('created_at', None)  
+        data.pop('updated_at', None)
         return data
 
-    @post_load
-    def convert_enums_for_storage(self, data, **kwargs):
-        """Convert Enum value to Enum name for storage before deserialization."""
-        if 'workflow_type' in data:
-            data['workflow_type'] = WorkflowType[data['workflow_type']].name
-        if 'status' in data:
-            data['status'] = JobStatus[data['status']].name
-        return data
     
 

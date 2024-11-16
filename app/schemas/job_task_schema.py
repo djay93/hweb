@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validates, ValidationError, post_dump, post_load
+from marshmallow import Schema, fields, validates, ValidationError, pre_load
 from app.models.enum import TaskStatus, TriggerType
 
 class JobTaskSchema(Schema):
@@ -20,25 +20,11 @@ class JobTaskSchema(Schema):
         if value not in TaskStatus._member_names_:
             raise ValidationError("Invalid status.")
 
-    # @validates('job_task_type')
-    # def validate_job_task_type(self, value):
-    #     if value not in TriggerType._member_names_:
-    #         raise ValidationError("Invalid schedule type.")
-
-    @post_dump
-    def convert_enums_for_ui(self, data, **kwargs):
-        """Convert Enum name to Enum value for UI display after serialization."""
-        if 'status' in data:
-            data['status'] = TaskStatus[data['status']].value
-        if 'job_task_type' in data:
-            data['job_task_type'] = TriggerType[data['job_task_type']].value
+    @pre_load
+    def remove_readonly_fields(self, data, **kwargs):
+        """Remove read-only fields before loading."""
+        data.pop('created_at', None)  
+        data.pop('updated_at', None)
         return data
+    
 
-    @post_load
-    def convert_enums_for_storage(self, data, **kwargs):
-        """Convert Enum value to Enum name for storage before deserialization."""
-        if 'status' in data:
-            data['status'] = TaskStatus(data['status']).name
-        if 'job_task_type' in data:
-            data['job_task_type'] = TriggerType(data['job_task_type']).name
-        return data

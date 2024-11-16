@@ -38,7 +38,7 @@
                                 <label for="workflow_type" class="form-label">Workflow Type</label>
                                 <select name="workflow_type" x-model="form.workflow_type" @blur="validateField('workflow_type')" disabled :class="errors['workflow_type'] ? 'form-select is-invalid' : 'form-select'">
                                     <template x-for="option in options.workflow_type_options" :key="option.name">
-                                        <option :value="option.name" x-text="option.value"></option>
+                                        <option :value="option.name" :selected="option.name === form.workflow_type" x-text="option.value"></option>
                                     </template>
                                 </select>
                             </div>
@@ -124,7 +124,7 @@
                                     <td x-text="task.order"></td>
                                     <td x-text="task.name"></td>
                                     <td>
-                                        <span :class="task.job_task_type === 'Automated' ? 'badge bg-green text-green-fg' : 'badge bg-blue text-blue-fg'" x-text="task.job_task_type"></span>
+                                        <span :class="task.job_task_type === 'AUTO' ? 'badge bg-green text-green-fg' : 'badge bg-blue text-blue-fg'" x-text="task.job_task_type"></span>
                                     </td>
                                     <td>
                                         <button class="btn btn-icon" @click="openTaskModal(task)" title="Delete Job">
@@ -263,7 +263,7 @@ function hmdaForm(initialData) {
                 return;
             }
 
-            fetch('{{ url_for("hmda_api.api_create_hmda_job") }}', {
+            fetch(`/api/hmda`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
