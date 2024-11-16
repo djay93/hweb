@@ -1,9 +1,9 @@
-from app.models.workflows import Workflow
-from app.models.workflow_tasks import WorkflowTask
-from app.models.jobs import Job
-from app.models.job_steps import JobStep
-from app.models.activity_logs import ActivityLog
+from app.models.workflow import Workflow
+from app.models.workflow_task import WorkflowTask
+from app.models.job import Job
+from app.models.job_task import JobTask
+from app.models.activity_log import ActivityLog
 
 __all__ = [
-    'Workflow', 'WorkflowTask', 'Job', 'JobStep', 'ActivityLog'
+    'Workflow', 'WorkflowTask', 'Job', 'JobTask', 'ActivityLog'
 ]

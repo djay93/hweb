@@ -1,10 +1,16 @@
 from flask import Blueprint, request, render_template, redirect, url_for, jsonify, flash
+from marshmallow import ValidationError
 from app.services import WorkflowService
 from app.forms.workflow_form import WorkflowForm
 from app.models.enum import WorkflowType
+from app.schemas import WorkflowSchema, WorkflowTaskSchema
 
 workflow_bp = Blueprint('workflows', __name__)
 workflow_api_bp = Blueprint('workflow_api', __name__)
+
+# Initialize Marshmallow schemas
+workflow_schema = WorkflowSchema()
+task_schema = WorkflowTaskSchema(many=True)
 
 # ----------------------------------------
 # Web UI Routes (Form-based, returns HTML)
@@ -71,25 +77,17 @@ def edit_workflow(workflow_id):
 # ----------------------------------------
 # REST API Routes (JSON responses)
 # ----------------------------------------
-
-@workflow_api_bp.route('/', methods=['GET'])
-def api_list_workflows():
-    workflows = WorkflowService.get_all_workflows()
-    return jsonify([workflow.to_dict() for workflow in workflows])
-
 @workflow_api_bp.route('/', methods=['POST'])
 def api_create_workflow():
     data = request.get_json()
-    
-    if not data.get('name'):
-        return jsonify({'error': 'Workflow name is required'}), 400
 
+    # Validate and deserialize input data
     try:
-        workflow = WorkflowService.create_workflow(
-            name=data.get('name'),
-            description=data.get('description')
-        )
-        return jsonify(workflow.to_dict()), 201
+        workflow_data = workflow_schema.load(data)
+        workflow = WorkflowService.create_workflow(**workflow_data)
+        return jsonify(workflow_schema.dump(workflow)), 201
+    except ValidationError as ve:
+        return jsonify({'errors': ve.messages}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -98,7 +96,8 @@ def api_get_workflow(workflow_id):
     workflow = WorkflowService.get_workflow_by_id(workflow_id)
     if not workflow:
         return jsonify({'error': 'Workflow not found'}), 404
-    return jsonify(workflow.to_dict())
+
+    return jsonify(workflow_schema.dump(workflow))
 
 @workflow_api_bp.route('/<int:workflow_id>', methods=['DELETE'])
 def api_delete_workflow(workflow_id):
@@ -107,15 +106,14 @@ def api_delete_workflow(workflow_id):
         return jsonify({'message': 'Workflow deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
-    
+
 @workflow_api_bp.route('/<int:workflow_id>/tasks', methods=['GET'])
 def api_get_workflow_tasks(workflow_id):
     try:
         tasks = WorkflowService.get_workflow_tasks(workflow_id)
         return jsonify({
             'message': 'No tasks found' if not tasks else 'Tasks retrieved successfully',
-            'tasks': [task.to_dict() for task in tasks]
+            'tasks': task_schema.dump(tasks)
         }), 200
     except Exception as e:
-        print(e)
         return jsonify({'error': str(e)}), 400

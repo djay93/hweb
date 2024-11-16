@@ -43,7 +43,7 @@ def create_app():
 
     # Configure logging
     if not app.debug and not app.testing:
-        logging_util.configure_logging(app)
+        logging_util.setup_logging(app)
 
     # Seed database using CLI
     @app.cli.command("seed-db")

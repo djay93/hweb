@@ -1,77 +1,139 @@
 {% extends 'layouts/base.html' %}
-{% import 'macros/macro_form_fields.html' as mff %}
-{% import 'macros/form_field_macros.html' as fm %}
 
-{% block title %}Compliance Hub - Edit HMDA Weekly Processing{% endblock %}
+{% block title %}Compliance Hub - Edit HMDA Process{% endblock %}
 {% block page_title %}
-    Edit HMDA Weekly Processing
+    Edit HMDA Process
 {% endblock %}
 
 {% block content %}
-<div class="row row-cards justify-content-center">
+<div class="row row-cards justify-content-center" x-data="hmdaEditForm({{ form_data }}, {{ form_options }})">
     <div class="col-md-12">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        <!-- Flash Messages -->
+        <template x-if="message">
+            <div :class="`alert alert-${message.type} alert-dismissible fade show mb-3`" role="alert">
+                <span x-text="message.text"></span>
+                <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
+            </div>
+        </template>
+
+        <!-- Edit Job Form -->
         <div class="card">
-            <form method="POST" action="{{ url_for('hmda.edit_hmda_job', hmda_id=hmda_weekly.id) }}">
-                {{ form.csrf_token }}
+            <form id="hmda-form" @submit.prevent="submitForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                 <div class="card-body">
-                    <h3>HMDA Details</h3>
+                    <h3>HMDA Job Details</h3>
                     <div class="row">
-                        <!-- Week Name -->
-                        <div class="col-md-6">
-                            {{ fm.render_text_field(form.name, placeholder='HMDA Week - mm/dd/yyyy') }}
+                        <!-- Name Field -->
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Name</label>
+                                <input type="text" name="name" placeholder="Enter process name" x-model="form.name" @blur="validateField('name')" :class="errors['name'] ? 'form-control is-invalid' : 'form-control'">
+                                <div x-cloak x-show="errors['name']" class="invalid-feedback" x-text="errors['name']"></div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            {{ fm.render_date_field(form.next_run_time) }}
+
+                        <!-- Workflow Type Dropdown -->
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="workflow_type" class="form-label">Workflow Type</label>
+                                <select name="workflow_type" x-model="form.workflow_type" @blur="validateField('workflow_type')" disabled :class="errors['workflow_type'] ? 'form-select is-invalid' : 'form-select'">
+                                    <template x-for="option in options.workflow_type_options" :key="option.name">
+                                        <option :value="option.name" x-text="option.value"></option>
+                                    </template>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-6 mt-1">
-                            {{ fm.render_select_field(form.workflow_type, disabled=True) }}
+
+                        <!-- Workflow Dropdown -->
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="workflow_id" class="form-label">Workflow</label>
+                                <select name="workflow_id" x-model="form.workflow_id" @blur="validateField('workflow_id')" x-on:change="fetchWorkflowTasks" :class="errors['workflow_id'] ? 'form-select is-invalid' : 'form-select'  ">
+                                    <option value="" selected>Select a workflow</option>
+                                    <template x-for="option in options.workflow_options" :key="option.id">
+                                        <option :value="option.id" x-text="option.name"></option>
+                                    </template>
+                                </select>
+                                <div x-cloak x-show="errors['workflow_id']" class="invalid-feedback" x-text="errors['workflow_id']"></div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mt-1">
-                            {{ fm.render_select_field(form.workflow_id, disabled=True) }}
+
+                        <!-- Status Dropdown -->
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select name="status" x-model="form.status" @blur="validateField('status')" disabled :class="errors['status'] ? 'form-select is-invalid' : 'form-select'">
+                                    <template x-for="option in options.status_options" :key="option.name">
+                                        <option :value="option.name" x-text="option.value"></option>
+                                    </template>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-12 mt-1">
-                            {{ fm.render_textarea_field(form.description) }}
+
+                        <!-- Scheduled Run Time -->
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="next_run_time" class="form-label">Scheduled Run Time</label>
+                                <input type="date" name="next_run_time" x-model="form.next_run_time" @blur="validateField('next_run_time')" placeholder="Enter schedule date" :class="errors['next_run_time'] ? 'form-control is-invalid' : 'form-control'">
+                                <div x-cloak x-show="errors['next_run_time']" class="invalid-feedback" x-text="errors['next_run_time']"></div>
+                            </div>
                         </div>
-                        <div>
-                            {{form.job_steps}}
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="start_time" class="form-label">Start Time</label>
+                                <input type="date" name="start_time" class="form-control" x-model="form.start_time" x-bind:disabled="true">
+                            </div>
                         </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="end_time" class="form-label">End Time</label>
+                                <input type="date" name="end_time" class="form-control" x-model="form.end_time" x-bind:disabled="true">
+                            </div>
+                        </div>
+                        
                         <div class="d-flex">
+                            <button type="button" class="btn btn-secondary" @click="window.location.href = '{{ url_for('hmda.list_hmda_jobs') }}'">Cancel</button>
                             <button type="submit" class="btn btn-primary ms-auto">
-                                Save Details
+                                Create HMDA Job
                             </button>
                         </div>
                     </div>
                 </div>
-            </form>       
+            </form>
         </div>
     </div>
 
-    <!--- Workflow Steps  -->
-    <div class="col-md-12">
-        <div id="workflow-steps-card" class="card" style="display: none;">
+    <!-- Workflow Steps -->
+    <div class="col-md-12 mt-4">
+        <div class="card">
             <div class="card-body">
-                <h3>HMDA Steps/Checklists</h3>
+                <h3>Workflow Steps</h3>
                 <div class="table-responsive">
-                    <table class="table table-bordered mb-0 mt-0">
+                    <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th class="col-md-1">Order</th>
-                                <th class="col-md-3">Step Name</th>
-                                <th class="col-md-2">Task Type</th>
-                                <th class="col-md-6">Meta</th>
+                                <th>#</th>
+                                <th>Step Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="workflow-steps-body">
+                        <tbody>
+                            <template x-for="step in form.steps" :key="step.order">
+                                <tr>
+                                    <td x-text="step.order"></td>
+                                    <td x-text="step.name"></td>
+                                    <td x-text="step.job_task_type"></td>
+                                    <td>
+                                        <span :class="step.status === 'Completed' ? 'badge bg-success' : 'badge bg-warning'" x-text="step.status"></span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" @click="editStep(step)">Edit</button>
+                                    </td>
+                                </tr>
+                            </template>
                         </tbody>
                     </table>
                 </div>
@@ -82,41 +144,48 @@
 {% endblock %}
 
 {% block scripts %}
-<script type="module">
-import { getAPI } from '{{ url_for("static", filename="js/utils.js") }}';
+<script>
+function hmdaEditForm(initialData, formOptions) {
+    return {
+        csrfToken: document.querySelector('input[name="csrf_token"]').value,
+        form: { ...initialData },
+        options: {
+            workflow_type_options: formOptions.workflow_type_options || [],
+            status_options: formOptions.status_options || [],
+            workflow_options: formOptions.workflow_options || []
+        },
+        message: null,
+        errors: {},
 
-document.getElementById('workflow_id').addEventListener('change', async function() {
-    const workflowId = this.value;
-    const stepsDiv = document.getElementById('workflow-steps-card');
-    const stepsBody = document.getElementById('workflow-steps-body');
-    
-    if (workflowId) {
-        const data = await getAPI(`/api/workflows/${workflowId}/tasks`);
+        submitForm() {
+            fetch(`/api/hmda/jobs/${this.form.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.csrfToken,
+                },
+                body: JSON.stringify(this.form),
+            })
+                .then(res => res.json())
+                .then(data => {
+                    this.message = { type: 'success', text: 'Job updated successfully.' };
+                    setTimeout(() => (window.location.href = '/hmda/jobs'), 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to update job:', err);
+                    this.message = { type: 'danger', text: 'Failed to update job.' };
+                });
+        },
 
-        // Clear existing content
-        stepsBody.innerHTML = '';   
+        editStep(step) {
+            console.log('Editing step:', step);
+            // Add logic to handle step editing
+        },
 
-        // Add each task to the table
-        if (data.tasks.length > 0) {
-            data.tasks.forEach((task, index) => {
-                stepsBody.innerHTML += `
-                    <tr>
-                        <td>${task.order}</td>
-                        <td>${task.name}</td>
-                        <td>
-                            <span class="${task.task_type === 'Automated' ? 'badge bg-green text-green-fg' : 'badge bg-blue text-blue-fg'}">${task.task_type || ''}</span>
-                        </td>
-                        <td>${task.meta || ''}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        // Show the table
-        stepsDiv.style.display = 'block';
-    } else {
-        stepsDiv.style.display = 'none';
-    }
-});
+        cancelEdit() {
+            window.location.href = '/hmda/jobs';
+        },
+    };
+}
 </script>
 {% endblock %}

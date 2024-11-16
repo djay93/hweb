@@ -1,7 +1,8 @@
-from enum import Enum as PyEnum
+from enum import Enum, auto
 from typing import List, Tuple
 
-class JobStatus(PyEnum):
+class JobStatus(Enum):
+    NEW = "NEW"
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     COMPLETED = "COMPLETED"
@@ -9,12 +10,10 @@ class JobStatus(PyEnum):
     CANCELED = "CANCELED"
 
     @classmethod
-    def choices(cls) -> List[Tuple[str, str]]:
-        """Return choices for forms"""
-        return [(status.name, status.value) for status in cls]
+    def choices(cls) -> List[dict]:
+        return [{"name": type.name, "value": type.value} for type in cls]
 
-
-class StepStatus(PyEnum):
+class TaskStatus(Enum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     COMPLETED = "COMPLETED"
@@ -22,38 +21,32 @@ class StepStatus(PyEnum):
     CANCELED = "CANCELED"
     SKIPPED = "SKIPPED"
 
-    @classmethod
-    def choices(cls) -> List[Tuple[str, str]]:
-        """Return choices for forms"""
-        return [(status.name, status.value) for status in cls]
+    classmethod
+    def choices(cls) -> List[dict]:
+        return [{"name": type.name, "value": type.value} for type in cls]
 
-class ScheduleType(PyEnum):
+class TriggerType(Enum):
     AUTO = "Automated"
     MANUAL = "Manual"
-    WEEKLY = "WEEKLY"
-    MONTHLY = "MONTHLY"
-    YEARLY = "YEARLY"
 
     @classmethod
-    def choices(cls) -> List[Tuple[str, str]]:
-        """Return choices for forms"""
-        return [(type.name, type.value) for type in cls]
+    def choices(cls) -> List[dict]:
+        return [{"name": type.name, "value": type.value} for type in cls]
 
-class WorkflowType(PyEnum):
+class WorkflowType(Enum):
     HMDA = "HMDA"
     EWRA = "EWRA"
     QUARTERLY_REVIEW = "Quarterly Review"
 
     @classmethod
-    def choices(cls) -> List[Tuple[str, str]]:
-        """Return choices for forms"""
-        return [(type.name, type.value) for type in cls]
+    def choices(cls) -> List[dict]:
+        return [{"name": type.name, "value": type.value} for type in cls]
 
-class WorkflowTaskType(PyEnum):
-    AUTO = "Automated"
-    MANUAL = "Manual"
+class ScheduleType(Enum):
+    WEEKLY = "Weekly"
+    MONTHLY = "Monthly"
+    YEARLY = "Yearly"
 
     @classmethod
-    def choices(cls) -> List[Tuple[str, str]]:
-        """Return choices for forms"""
-        return [(type.name, type.value) for type in cls]
+    def choices(cls) -> List[dict]:
+        return [{"name": type.name, "value": type.value} for type in cls]

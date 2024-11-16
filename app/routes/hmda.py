@@ -1,137 +1,164 @@
+import logging
+import json
 from datetime import datetime
 from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify
-from app.services.hmda_service import HMDAService 
+from marshmallow import ValidationError
+from app.services import HMDAService
 from app.forms import HmdaJobDetailsForm
-from app.models.enum import WorkflowType, JobStatus
+from app.models.enum import JobStatus, WorkflowType
+from app.schemas import JobSchema, JobTaskSchema
 
 hmda_bp = Blueprint('hmda', __name__)
 hmda_api_bp = Blueprint('hmda_api', __name__)
 
+# Initialize Marshmallow schemas
+hmda_job_schema = JobSchema()
+hmda_jobs_schema = JobSchema(many=True)
+hmda_job_tasks_schema = JobTaskSchema(many=True)
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# ----------------------------------------
+# Web UI Routes
+# ----------------------------------------
+
 @hmda_bp.route('/', methods=['GET'])
 def list_hmda_jobs():
-    """
-    Display a paginated list of HMDA jobs.
-    """
     page = request.args.get('page', 1, type=int)
-    per_page = 5
+    per_page = request.args.get('per_page', 5, type=int)
     search = request.args.get('search', '').strip().lower()
-    pagination = HMDAService.get_hmda_jobs(page, per_page, search)
-    return render_template('hmda/list_hmda_jobs.html', hmda_reports=pagination.items, pagination=pagination)
+
+    # Fetch paginated jobs and serialize
+    try:
+        pagination = HMDAService.get_hmda_jobs(page, per_page, search)
+        serialized_jobs = hmda_jobs_schema.dump(pagination.items)
+
+        logger.info(f"Successfully retrieved HMDA jobs for page {page} with per_page {per_page}.")
+    except Exception as e:
+        logger.error(f"Error retrieving HMDA jobs: {str(e)}")
+        flash("An error occurred while retrieving jobs.", "error")
+        return redirect(url_for('hmda.list_hmda_jobs')), 500
+    
+    return render_template('hmda/list_hmda_jobs.html', hmda_reports=serialized_jobs, pagination=pagination)
+
 
 @hmda_bp.route('/new', methods=['GET'])
 def new_hmda_job():
-    """
-    Display the form for creating a new HMDA job.
-    """
-    form = HmdaJobDetailsForm()
-    return render_template('hmda/new_hmda_job.html', form=form)
+    form_data = {
+        "name": "",
+        "workflow_type": WorkflowType.HMDA.name,
+        "workflow_id": None,
+        "status": JobStatus.NEW.name,
+        "next_run_time": None,
+        "start_time": None,
+        "end_time": None,
+        "workflow_type_options": WorkflowType.choices(),
+        "status_options": JobStatus.choices(),
+        "workflow_options": [{"id": w.id, "name": w.name} for w in HMDAService.get_hmda_workflows()]
+    }
+    serialized_data = json.dumps(form_data)
+    logger.info("Loaded form for creating a new HMDA job.")
+    return render_template('hmda/new_hmda_job.html', form_data=serialized_data)
 
 
 @hmda_bp.route('/<int:hmda_id>/details', methods=['GET'])
 def view_hmda_job(hmda_id):
-    """
-    Display the details of an existing HMDA job.
-    """
-    hmda_job = HMDAService.get_hmda_job_by_id(hmda_id)
-    if not hmda_job:
-        flash('HMDA Job not found', 'error')
-        return redirect(url_for('hmda.list_hmda_jobs'))
-    
-    # Set the form data
-    form = HmdaJobDetailsForm(obj=hmda_job)
-    form.workflow_type.data = hmda_job.workflow_type.name
-    form.workflow_id.data = hmda_job.workflow_id
+    try:
+        hmda_job = HMDAService.get_hmda_job_by_id(hmda_id)
+        if not hmda_job:
+            logger.warning(f"HMDA Job with ID {hmda_id} not found.")
+            flash('HMDA Job not found', 'error')
+            return redirect(url_for('hmda.list_hmda_jobs')), 404
+        
+        hmda_job_data = hmda_job_schema.dump(hmda_job)
+        logger.info(f"Loaded details for HMDA Job ID {hmda_id}.")
+    except Exception as e:
+        logger.error(f"Error loading HMDA Job ID {hmda_id}: {str(e)}")
+        flash("An error occurred while loading the job details.", "error")
+        return redirect(url_for('hmda.list_hmda_jobs')), 500
 
-    # Set other fields
-    hmda_job_data = hmda_job.to_dict()
+    return render_template('hmda/view_hmda_job.html', form_data=json.dumps(hmda_job_data))
 
-    # render the template
-    return render_template('hmda/view_hmda_job.html', form=form, hmda_job=hmda_job_data)
-    
 
 @hmda_bp.route('/<int:hmda_id>/edit', methods=['GET'])
 def edit_hmda_job(hmda_id):
-    """
-    Display the form for editing an existing HMDA job.
-    """
-    hmda_job = HMDAService.get_hmda_job_by_id(hmda_id)
-    if not hmda_job:
-        flash('HMDA Job not found', 'error')
-        return redirect(url_for('hmda.list_hmda_jobs'))
-    
-    # Set the form data
-    form = HmdaJobDetailsForm(obj=hmda_job)
-    form.workflow_type.data = hmda_job.workflow_type.name
-    form.workflow_id.data = hmda_job.workflow_id
+    try:
+        # get job details
+        hmda_job = HMDAService.get_hmda_job_by_id(hmda_id)
+        if not hmda_job:
+            logger.warning(f"HMDA Job with ID {hmda_id} not found.")
+            flash('HMDA Job not found', 'error')
+            return redirect(url_for('hmda.list_hmda_jobs')), 404
 
-    # Set other fields
-    hmda_job_data = hmda_job.to_dict()
+        # serialize job data
+        hmda_job_data = hmda_job_schema.dump(hmda_job)
 
-    # render the template
-    return render_template('hmda/edit_hmda_job.html', form=form, hmda_job=hmda_job_data)
+        # get form options
+        form_options = {
+            "workflow_type_options": WorkflowType.choices(),
+            "status_options": JobStatus.choices(),
+            "workflow_options": [{"id": w.id, "name": w.name} for w in HMDAService.get_hmda_workflows()]
+        }
 
-############# API Routes #############
+        logger.info(f"Loaded edit form for HMDA Job ID {hmda_id}.")
+    except Exception as e:
+        logger.error(f"Error loading HMDA Job ID {hmda_id} for editing: {str(e)}")
+        flash("An error occurred while loading the job for editing.", "error")
+        return redirect(url_for('hmda.list_hmda_jobs')), 500
+
+    return render_template('hmda/edit_hmda_job.html', form_data=json.dumps(hmda_job_data), form_options=json.dumps(form_options))
+
+
+# ----------------------------------------
+# API Routes
+# ----------------------------------------
+
 @hmda_api_bp.route('/<int:job_id>', methods=['DELETE'])
 def api_delete_hmda_job(job_id):
-    """
-    Deletes an existing HMDA job.
-    """
     try:
         HMDAService.delete_hmda_job(job_id)
+        logger.info(f"HMDA Job ID {job_id} deleted successfully.")
         return jsonify({'message': 'Job deleted successfully'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        logger.error(f"Failed to delete HMDA Job ID {job_id}: {str(e)}")
+        return jsonify({'error': f'Failed to delete job: {str(e)}'}), 400
+
 
 @hmda_api_bp.route('/', methods=['POST'])
 def api_create_hmda_job():
-    """
-    Saves a new HMDA job.
-    """
-    data = request.get_json() 
-
-    if not data:
+    body = request.get_json()
+    if not body:
+        logger.warning("Received invalid JSON payload.")
         return jsonify({'error': 'Invalid JSON payload'}), 400
 
-    # Extract and validate data
     try:
-        name = data.get('name')
-        workflow_id = data.get('workflow_id')
-        workflow_type = data.get('workflow_type', WorkflowType.HMDA.name)
-        status = data.get('status', JobStatus.PENDING.name)
-        
-        start_time = None
-        end_time = None
-        next_run_time = None
-        if data.get('start_time'):
-            start_time = datetime.strptime(data.get('start_time'), '%Y-%m-%d %H:%M')
-        if data.get('end_time'):
-            end_time = datetime.strptime(data.get('end_time'), '%Y-%m-%d %H:%M')
-        if data.get('next_run_time'):
-            next_run_time = datetime.strptime(data.get('next_run_time'), '%Y-%m-%d')
-        
-        workflow_tasks = data.get('workflow_tasks', [])
-        #job_status = JobStatus[status].name if status else JobStatus.PENDING.name
+        # Deserialize and validate job data
+        job_data = hmda_job_schema.load(body.get("job_data"))
+        logger.info("Validated HMDA job data successfully.")
 
-        # Create a new HMDA process using form data
-        hmda_process = HMDAService.create_hmda_job(
-            name=name,
-            workflow_id=workflow_id,
-            workflow_type=workflow_type,
-            start_time=start_time,
-            end_time=end_time,
-            status=status,
-            next_run_time=next_run_time
-        )
+        # Create the primary job
+        hmda_job = HMDAService.create_hmda_job(job_data)
+        logger.info(f"HMDA Job created successfully with ID {hmda_job.id}.")
 
-        # Create the job steps
-        HMDAService.create_hmda_job_steps(hmda_process.id, workflow_tasks)
+        # Deserialize, validate, and create job tasks
+        # Update job_id in tasks data and then deserialize/validate
+        job_tasks_data = body.get('job_tasks_data', [])
+        for task in job_tasks_data:
+            task['job_id'] = hmda_job.id
+        hmda_job_tasks_data = hmda_job_tasks_schema.load(job_tasks_data)
+        HMDAService.create_hmda_job_tasks(hmda_job.id, hmda_job_tasks_data)
+        logger.info(f"Job tasks for HMDA Job ID {hmda_job.id} created successfully.")
 
+        # Respond with success
         return jsonify({
             'message': 'HMDA process created successfully!',
-            'hmda_process_id': hmda_process.id
+            'hmda_job_id': hmda_job.id
         }), 201
 
-    except ValueError as ve:
-        return jsonify({'error': str(ve)}), 400
+    except ValidationError as ve:
+        logger.warning(f"Validation error creating HMDA job: {ve.messages}")
+        return jsonify({'errors': ve.messages}), 400
     except Exception as e:
+        logger.error(f"Error creating HMDA process: {str(e)}")
         return jsonify({'error': f'Error creating HMDA process: {str(e)}'}), 500

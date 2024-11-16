@@ -1,14 +1,16 @@
 import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
+from flask import request
 
-def configure_logging(app, log_name: str = 'app.log') -> None:
+def setup_logging(app, log_name: str = 'app.log', log_level=logging.INFO) -> None:
     """
     Configure logging for the application with both file and stdout handlers.
     
     Args:
         app: Flask application instance
         log_name: Name of the log file
+        log_level: Default logging level
     """
     # Create logs directory if it doesn't exist
     if not os.path.exists('logs'):
@@ -22,26 +24,24 @@ def configure_logging(app, log_name: str = 'app.log') -> None:
 
     # Configure root logger
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
+    root_logger.setLevel(log_level if not app.debug else logging.DEBUG)
 
     # Clear existing handlers to avoid duplication
-    if app.debug:
-        root_logger.setLevel(logging.DEBUG)
-    
-    # Always log to stdout in production
+    root_logger.handlers.clear()
+
+    # Log to stdout in all environments
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
-    stream_handler.setLevel(logging.INFO)
+    stream_handler.setLevel(log_level)
     root_logger.addHandler(stream_handler)
 
-    # File logging configuration
+    # File logging for production
     if not app.debug and not app.testing:
-        # Time-based rotation (daily) with size limit
         file_handler = TimedRotatingFileHandler(
-            filename=f'logs/{log_name}',
+            filename=f'logs/{app.config["ENV"]}_{log_name}',
             when='midnight',
             interval=1,
-            backupCount=30,  # Keep month worth of logs
+            backupCount=30,  # Keep a month’s worth of logs
             encoding='utf-8'
         )
         file_handler.setFormatter(formatter)
@@ -54,3 +54,9 @@ def configure_logging(app, log_name: str = 'app.log') -> None:
 
     # Log application startup
     app.logger.info(f"Application started - Running in {app.config['ENV']} mode")
+
+    # Add a request log for each request in production
+    if not app.testing:
+        @app.before_request
+        def log_request_info():
+            app.logger.info(f"Request: {request.method} {request.path} - From: {request.remote_addr}")

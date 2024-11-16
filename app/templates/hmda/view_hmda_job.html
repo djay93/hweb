@@ -88,7 +88,7 @@
                                             'Weekly': '📆 Weekly',
                                             'Monthly': '🗓 Monthly',
                                             'Manual': '⏳ Manual'
-                                        }[step.schedule_type]"></td>
+                                        }[step.job_task_type]"></td>
                                         <td x-text="step.started_at"></td>
                                         <td x-text="step.completed_at"></td>
                                         <td x-text="step.retries"></td>
@@ -125,7 +125,7 @@
                 </div>
                 <div class="modal-body">
                     <label class="form-label">Set Job Status</label>
-                    <select class="form-select" x-model="selectedJobStep.status">
+                    <select class="form-select" x-model="selectedJobTask.status">
                         <option value="Pending">Pending</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
@@ -149,7 +149,7 @@
                     <button type="button" class="btn-close" @click="closeModals"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Automated job <strong x-text="selectedJobStep.name"></strong> has been triggered successfully.</p>
+                    <p>Automated job <strong x-text="selectedJobTask.name"></strong> has been triggered successfully.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" @click="closeModals">Close</button>
@@ -176,23 +176,23 @@ function hmdaViewForm() {
         message: null,
         showManualModal: false,
         showAutoModal: false,
-        selectedJobStep: {
+        selectedJobTask: {
             name: '',
-            schedule_type: '',
+            job_task_type: '',
             status: '',
             order: ''
         },
         
         executeJob(step) {
-            this.selectedJobStep = step;
-            if (step.schedule_type === 'Manual') {
+            this.selectedJobTask = step;
+            if (step.job_task_type === 'Manual') {
                 const modalEl = document.getElementById('manualJobModal');
                 const modalInstance = new bootstrap.Modal(modalEl, {
                     backdrop: 'static',
                     keyboard: false
                 });
                 modalInstance.show();
-            } else if (step.schedule_type === 'Automated') {
+            } else if (step.job_task_type === 'Automated') {
                 const modalEl = document.getElementById('autoJobModal');
                 const modalInstance = new bootstrap.Modal(modalEl, {
                     backdrop: 'static',
@@ -205,11 +205,11 @@ function hmdaViewForm() {
 
         saveManualJobStatus() {
             // Logic to save manual job status to the backend
-            const stepIndex = this.workflowSteps.findIndex(t => t.order === this.selectedJobStep.order);
+            const stepIndex = this.workflowSteps.findIndex(t => t.order === this.selectedJobTask.order);
             if (stepIndex !== -1) {
-                this.workflowSteps[stepIndex] = { ...this.selectedJobStep };
+                this.workflowSteps[stepIndex] = { ...this.selectedJobTask };
             }
-            this.showMessage('success', `Job status updated to "${this.selectedJobStep.status}" for ${this.selectedJobStep.name}.`);
+            this.showMessage('success', `Job status updated to "${this.selectedJobTask.status}" for ${this.selectedJobTask.name}.`);
             this.closeModals();
         },
 
@@ -221,9 +221,9 @@ function hmdaViewForm() {
                     modalInstance.hide();
                 }
             });
-            this.selectedJobStep = {
+            this.selectedJobTask = {
                 name: '',
-                schedule_type: '',
+                job_task_type: '',
                 status: ''
             };
         },
