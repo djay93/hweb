@@ -4,7 +4,7 @@
 {% block page_title %}HMDA Jobs{% endblock %}
 
 {% block page_actions %}
-<a class="btn btn-primary d-none d-sm-inline-block" href="{{ url_for('hmda.new_hmda_job') }}">
+<a class="btn btn-blue d-none d-sm-inline-block" href="{{ url_for('hmda.new_hmda_job') }}">
     <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
         <use xlink:href="{{ url_for('static', filename='icons/plus.svg') }}#plus" />
     </svg>
@@ -13,16 +13,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="row row-cards" x-data="hmdaList()">
+<div class="row row-cards" x-data="hmdaList({{ initial_data }})" @search-updated.window="handleSearchUpdated">
     <div class="col-12">
-        <!-- Flash Messages -->
-        <template x-if="message">
-            <div :class="`alert alert-${message.type} alert-dismissible fade show mb-3`" role="alert">
-                <span x-text="message.text"></span>
-                <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
-            </div>
-        </template>
-
         <div class="card">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             
@@ -39,25 +31,22 @@
                         </div>
                     </div>
                     <div class="ms-auto text-secondary">
-                      {% set search_action_url = url_for('hmda.list_hmda_jobs') %}
-                      {% include 'partials/search_component.html' with context %}
+                        {% include 'partials/search_component.html' with context %}
                     </div>
                 </div>
             </div>
 
             <!-- Data Table -->
-            <div class="table-responsive" style="min-height: 400px; max-height: 600px; overflow-y: auto;">
+            <div class="table-responsive" style="min-height: 400px;">
                 <table class="table card-table table-vcenter text-nowrap datatable sortable">
                     <thead>
                         <tr>
                             <th class="w-1">
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input m-0 align-middle"
-                                    aria-label="Select all HMDA Records"
-                                    @change="toggleSelectAll"
-                                    x-model="selectAll"
-                                />
+                                <input type="checkbox"
+                                       class="form-check-input m-0 align-middle"
+                                       aria-label="Select all HMDA Records"
+                                       @click="toggleSelectAll"
+                                       :checked="selectAll"/>
                             </th>
                             <th><button class="table-sort" data-sort="sort-id">HMDA Job ID</button></th>
                             <th><button class="table-sort" data-sort="sort-name">HMDA Job Name</button></th>
@@ -67,61 +56,71 @@
                             <th class="w-1">Actions</th>
                         </tr>
                     </thead>
-
                     <tbody>
-                        {% for report in hmda_reports %}
-                        <tr>
-                            <td>
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input m-0 align-middle"
-                                    aria-label="Select HMDA Record"
-                                    x-model="selectedReports"
-                                    :value="{{ report.id }}"
-                                />
-                            </td>
-                            <td class="sort-id">{{ report.id }}</td>
-                            <td class="sort-name">{{ report.name }}</td>
-                            <td class="sort-start_time">{{ report.start_time.strftime('%Y-%m-%d') if report.start_time }}</td>
-                            <td class="sort-end_time">{{ report.end_time.strftime('%Y-%m-%d') if report.end_time }}</td>
-                            <td class="sort-status">
-                                <span class="badge"
-                                    :class="{
-                                        'bg-success': '{{ report.status.value }}' === 'Completed',
-                                        'bg-warning': '{{ report.status.value }}' === 'In Progress',
-                                        'bg-danger': '{{ report.status.value }}' === 'Failed'
-                                    }">
-                                    {{ report.status.value }}
-                                </span>
-                            </td>
-                            <td>
-                                <a class="btn btn-icon" href="{{ url_for('hmda.view_hmda_job', hmda_id=report.id) }}" title="View Details">
-                                  <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
-                                      <use xlink:href="{{ url_for('static', filename='icons/eye.svg') }}#eye" />
-                                  </svg>
-                                </a>
-                                <a class="btn btn-icon" href="{{ url_for('hmda.edit_hmda_job', hmda_id=report.id) }}" title="Edit Details">
-                                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
-                                        <use xlink:href="{{ url_for('static', filename='icons/pencil.svg') }}#pencil" />
-                                    </svg>
-                                </a>
-                                <button class="btn btn-icon" @click="confirmDelete($el.dataset.actionId)" title="Delete Job" :data-action-id="{{ report.id }}">
-                                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
-                                        <use xlink:href="{{ url_for('static', filename='icons/delete.svg') }}#delete" />
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td class="text-muted text-center" colspan="6">No HMDA records available</td>
-                        </tr>
-                        {% endfor %}
+                        <template x-if="loading">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </td>
+                            </tr>
+                        </template>
+                        <template x-if="!loading && hmda_jobs.length === 0">
+                            <tr>
+                                <td colspan="7" class="text-muted text-center">No HMDA records available</td>
+                            </tr>
+                        </template>
+                        <template x-for="job in hmda_jobs" :key="job.id">
+                            <tr>
+                                <td>
+                                    <input type="checkbox"
+                                           class="form-check-input m-0 align-middle"
+                                           x-model="selectedJobs"
+                                           :value="job.id"/>
+                                </td>
+                                <td class="sort-id" x-text="job.id"></td>
+                                <td class="sort-name" x-text="job.name"></td>
+                                <td class="sort-start_time" x-text="job.start_time"></td>
+                                <td class="sort-end_time" x-text="job.end_time"></td>
+                                <td class="sort-status">
+                                    <span class="badge"
+                                          :class="{
+                                              'bg-success': job.status === 'Completed',
+                                              'bg-warning': job.status === 'In Progress',
+                                              'bg-danger': job.status === 'Failed'
+                                          }"
+                                          x-text="job.status">
+                                    </span>
+                                </td>
+                                <td>
+                                    <a class="btn btn-icon" :href="`/hmda/${job.id}/view`" title="View Details">
+                                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                                            <use xlink:href="{{ url_for('static', filename='icons/eye.svg') }}#eye" />
+                                        </svg>
+                                    </a>
+                                    <a class="btn btn-icon" :href="`/hmda/${job.id}/edit`" title="Edit Details">
+                                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                                            <use xlink:href="{{ url_for('static', filename='icons/pencil.svg') }}#pencil" />
+                                        </svg>
+                                    </a>
+                                    <button class="btn btn-icon" 
+                                            @click="confirmDelete(job.id)" 
+                                            title="Delete Job">
+                                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                                            <use xlink:href="{{ url_for('static', filename='icons/delete.svg') }}#delete" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
 
-            <div class="card-footer d-flex align-items-center">{% include 'partials/pagination.html' %}</div>
+            <!-- Pagination -->
+            <div class="card-footer">
+                {% include 'partials/pagination_component.html' with context %}
+            </div>
+            
         </div>
     </div>
 
@@ -135,41 +134,118 @@
                         <p x-text="deleteMessage"></p>
                         <div class="btn-list">
                             <button type="button" class="btn btn-danger" @click="handleDelete">Delete</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-secondary" @click="closeDeleteModal">Cancel</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-  
 </div>
 
 <script>
-function hmdaList() {
+function hmdaList(initialData) {
     return {
-        selectedReports: [],
-        selectAll: false,
-        message: null,
-        deleteMessage: '',
-        reportToDelete: null,
+        csrf_token: document.querySelector('input[name="csrf_token"]').value,
+        hmda_jobs: initialData.hmda_jobs || [],
+        pagination: initialData.pagination || {},
+        search: initialData.search || '',
+        page: initialData.page || 1,
+        per_page: initialData.per_page || 10,
+        loading: false,
 
-        toggleSelectAll() {
-            this.selectAll = !this.selectAll;
-            this.selectedReports = this.selectAll 
-                ? JSON.parse(`{{ hmda_reports | map(attribute='id') | list | tojson | safe }}`)
-                : [];
+        selectedJobs: [],
+        selectAll: false,
+        deleteMessage: '',
+        jobToDelete: [],
+
+        init() {
+            this.$watch('selectedJobs', (value) => {
+                this.selectAll = value.length === this.hmda_jobs.length && this.hmda_jobs.length > 0;
+            });
+
+            // Listen for search requests
+            this.$el.addEventListener('search:requested', (event) => {
+                if (event.detail && 'searchText' in event.detail) {
+                    this.search = event.detail.searchText;
+                    this.page = 1;
+                    this.performSearch();
+                } else if (event.detail && 'page' in event.detail) {
+                    this.page = event.detail.page;
+                    this.performSearch();
+                }
+            });
+
+            this.performSearch();
         },
 
-        confirmDelete(reportId) {
-            this.reportToDelete = reportId;
-            this.deleteMessage = `Are you sure you want to delete HMDA process with ID ${reportId}?`;
+        async performSearch() {
+            this.loading = true;
 
-            // Bootstrap's method to show modal
-            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'), {
-                backdrop: 'static', 
-                keyboard: false 
-            });
+            try {
+                const apiUrl = `/api/hmda/?page=${this.page}&per_page=${this.per_page}&search=${this.search}`;
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': this.csrf_token,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const data = await response.json();
+                this.hmda_jobs = data.hmda_jobs;
+                this.pagination = data.pagination;
+                this.selectAll = false;
+                this.selectedJobs = [];
+
+                // Dispatch pagination update event
+                this.$dispatch('pagination:updated', this.pagination);
+
+                // Update URL without page reload
+                const url = new URL(window.location);
+                url.searchParams.set('search', this.search);
+                url.searchParams.set('page', this.page);
+                url.searchParams.set('per_page', this.per_page);
+                window.history.pushState({}, '', url);
+
+            } catch (error) {
+                console.error('Error fetching HMDA jobs:', error);
+                this.showMessage('danger', 'Failed to fetch HMDA jobs');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        handleSearchUpdated(event) {
+            this.search = event.detail || ''; 
+            this.page = 1; 
+            this.performSearch(); 
+        },
+
+        toggleSelectAll() {
+            console.log('toggleSelectAll', this.selectAll);
+            this.selectAll = !this.selectAll;
+            this.selectedJobs = this.selectAll ? this.hmda_jobs.map(job => job.id) : [];
+        },
+
+        confirmDelete(jobId) {
+            this.jobToDelete = [jobId];
+            this.deleteMessage = `Are you sure you want to delete HMDA process with ID ${jobId}?`;
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            modal.show();
+        },
+
+        confirmDeleteSelected() {
+            if (this.selectedJobs.length === 0) {
+                this.showMessage('danger', 'No HMDA records selected for deletion.');
+                return;
+            }
+
+            this.jobToDelete = [...this.selectedJobs];
+            this.deleteMessage = `Are you sure you want to delete the selected HMDA records (${this.selectedJobs.length} items)?`;
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
             modal.show();
         },
 
@@ -180,48 +256,37 @@ function hmdaList() {
             }
         },
 
-        handleDelete() {
-            if (!this.reportToDelete) return;
+        async handleDelete() {
+            if (!this.jobToDelete.length) return;
 
-            fetch(`/api/hmda/${this.reportToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value,
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to delete HMDA process');
-                }
-                this.showMessage('success', 'HMDA process deleted successfully.');
-                setTimeout(() => location.reload(), 1500);
-            })
-            .catch(error => {
+            this.closeDeleteModal();
+
+            try {
+                const deletePromises = this.jobToDelete.map(jobId => 
+                    fetch(`/api/hmda/${jobId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.csrf_token,
+                        }
+                    })
+                );
+
+                await Promise.all(deletePromises);
+                
+                const itemCount = this.jobToDelete.length;
+                this.showMessage('success', `Successfully deleted ${itemCount} HMDA ${itemCount === 1 ? 'process' : 'processes'}.`);
+                this.jobToDelete = [];
+                this.performSearch();
+                
+            } catch (error) {
                 console.error('Delete failed:', error);
                 this.showMessage('danger', 'Failed to delete the HMDA process.');
-            })
-            .finally(() => {
-                this.closeDeleteModal();
-            });
-        },
-
-        confirmDeleteSelected() {
-            if (this.selectedReports.length === 0) {
-                this.showMessage('danger', 'No HMDA records selected for deletion.');
-                return;
             }
-
-            this.deleteMessage = `Are you sure you want to delete the selected HMDA records (${this.selectedReports.length} items)?`;
-            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-            modal.show();
         },
 
         showMessage(type, text) {
-            this.message = { type, text };
-            setTimeout(() => {
-                this.message = null;
-            }, 3000);
+            window.showToast(type, text);
         }
     };
 }

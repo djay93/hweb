@@ -118,10 +118,15 @@ select {
   transition: all 0.3s ease;
 }
 
+/* Override Bootstrap's stylings */
 [x-cloak] {
   display: none !important;
 }
 
 .invalid-feedback[style*="display: block"] {
+  display: block !important;
+}
+
+.toast {
   display: block !important;
 }

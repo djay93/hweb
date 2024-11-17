@@ -23,23 +23,16 @@ logger = logging.getLogger(__name__)
 
 @hmda_bp.route('/', methods=['GET'])
 def list_hmda_jobs():
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 5, type=int)
-    search = request.args.get('search', '').strip().lower()
-
-    # Fetch paginated jobs and serialize
-    try:
-        pagination = HMDAService.get_hmda_jobs(page, per_page, search)
-        serialized_jobs = hmda_jobs_schema.dump(pagination.items)
-
-        logger.info(f"Successfully retrieved HMDA jobs for page {page} with per_page {per_page}.")
-    except Exception as e:
-        logger.error(f"Error retrieving HMDA jobs: {str(e)}")
-        flash("An error occurred while retrieving jobs.", "error")
-        return redirect(url_for('hmda.list_hmda_jobs')), 500
+    # Initial data for the page
+    initial_data = {
+        'page': request.args.get('page', 1, type=int),
+        'per_page': request.args.get('per_page', 10, type=int),
+        'search': request.args.get('search', ''),
+        'hmda_jobs': [],  # Will be populated by API call
+        'pagination': {}  # Will be populated by API call
+    }
     
-    return render_template('hmda/list_hmda_jobs.html', hmda_reports=serialized_jobs, pagination=pagination)
-
+    return render_template('hmda/list_hmda_jobs.html', initial_data=json.dumps(initial_data))
 
 @hmda_bp.route('/new', methods=['GET'])
 def new_hmda_job():
@@ -112,6 +105,37 @@ def edit_hmda_job(hmda_id):
 # ----------------------------------------
 # API Routes
 # ----------------------------------------
+
+@hmda_api_bp.route('/', methods=['GET'])
+def api_search_hmda_jobs():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+    search = request.args.get('search', '').strip().lower()
+
+    try:
+        pagination = HMDAService.get_hmda_jobs(page, per_page, search)
+        serialized_jobs = hmda_jobs_schema.dump(pagination.items)
+
+        # Create pagination info dictionary
+        pagination_info = {
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': pagination.page,
+            'per_page': pagination.per_page,
+            'has_next': pagination.has_next,
+            'has_prev': pagination.has_prev,
+            'next_num': pagination.next_num,
+            'prev_num': pagination.prev_num
+        }
+
+        return jsonify({
+            'hmda_jobs': serialized_jobs,
+            'pagination': pagination_info
+        }), 200
+    except Exception as e:
+        logger.error(f"Error retrieving HMDA jobs: {str(e)}")
+        return jsonify({'error': f'Error retrieving HMDA jobs: {str(e)}'}), 500
+
 
 @hmda_api_bp.route('/<int:job_id>', methods=['DELETE'])
 def api_delete_hmda_job(job_id):

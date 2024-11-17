@@ -55,6 +55,39 @@
 
             <main class="page-body">
                 <div class="container-xl">
+                    <!-- Toast Container -->
+                    <div class="toast-container position-fixed top-0 end-0 p-3" x-data="toastManager()" style="z-index: 1055">
+                        <template x-for="toast in toasts" :key="toast.id">
+                            <div class="toast show shadow-lg border-0"
+                                 x-show.transition.opacity.duration.500ms="toast.show"
+                                 role="alert" aria-live="assertive" aria-atomic="true"
+                                 style="min-width: 300px;">
+                                <div class="toast-header" :class="{
+                                    'bg-success-subtle text-success': toast.type === 'success',
+                                    'bg-danger-subtle text-danger': toast.type === 'error',
+                                    'bg-info-subtle text-info': toast.type === 'info'
+                                }">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path x-show="toast.type === 'success'" d="M5 12l5 5l10 -10" />
+                                        <path x-show="toast.type === 'error'" d="M18 6l-12 12m0 -12l12 12" />
+                                        <path x-show="toast.type === 'info'" d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0 -20z M12 8h.01 M11 12h1v4h1" />
+                                    </svg>
+                                    <strong class="me-auto" x-text="toast.type === 'success' ? 'Success' : (toast.type === 'error' ? 'Error' : 'Info')"></strong>
+                                    <button type="button" class="btn-close" :class="{
+                                        'text-success': toast.type === 'success',
+                                        'text-danger': toast.type === 'error',
+                                        'text-info': toast.type === 'info'
+                                    }" @click="removeToast(toast.id)" aria-label="Close"></button>
+                                </div>
+                                <div class="toast-body" :class="{
+                                    'bg-white text-success': toast.type === 'success',
+                                    'bg-white text-danger': toast.type === 'error',
+                                    'bg-white text-info': toast.type === 'info'
+                                }" x-text="toast.message"></div>
+                            </div>
+                        </template>
+                    </div>
                     <!--nav class="mb-3" aria-label="breadcrumb">
                         {% block breadcrumb %}
                             <ol class="breadcrumb">
@@ -80,6 +113,40 @@
     
     <!-- Tabler JS -->
     <script src="{{ url_for('static', filename='js/tabler.min.js') }}"></script>
+    <script>
+        function toastManager() {
+            return {
+                toasts: [],
+                addToast(type, message) {
+                    if (typeof message !== 'string' || message.trim() === '') {
+                        return;
+                    }
+                    
+                    const id = Date.now();
+                    // Limit to 3 toasts
+                    if (this.toasts.length >= 3) {
+                        this.toasts.shift(); 
+                    }
+                    this.toasts.push({ id, type, message, show: true });
+
+                    // Auto-hide after 4 seconds
+                    setTimeout(() => this.removeToast(id), 4000);
+                },
+                removeToast(id) {
+                    this.toasts = this.toasts.filter(toast => toast.id !== id);
+                }
+            };
+        }
+
+        window.showToast = (type, message) => {
+            const toastContainer = document.querySelector('[x-data="toastManager()"]');
+            if (toastContainer) {
+                const toastManager = Alpine.$data(toastContainer);
+                toastManager.addToast(type, message);
+            }
+        };
+    </script>
     {% block scripts %}{% endblock %}
+
 </body>
 </html>

@@ -1,0 +1,111 @@
+<div x-data="paginationComponent()" 
+    x-ref="paginationComponent" 
+    @pagination:updated.window="updatePagination($event.detail)"
+    class="d-flex align-items-center">
+    <!-- Showing X to Y of Z entries -->
+    <p class="m-0 text-secondary" x-show="pagination.total > 0">
+        Showing <span x-text="startEntry"></span> 
+        to <span x-text="endEntry"></span> 
+        of <span x-text="pagination.total"></span> entries
+    </p>
+
+    <!-- Pagination Links -->
+    <ul class="pagination m-0 ms-auto" x-show="pagination.pages > 1">
+        <!-- Previous Page Link -->
+        <li class="page-item" :class="{ 'disabled': !pagination.has_prev }">
+            <a class="page-link" href="#" @click.prevent="goToPage(pagination.prev_num)">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                    <use xlink:href="{{ url_for('static', filename='icons/chevron-left.svg') }}#chevron-left"/>
+                </svg>
+            </a>
+        </li>
+
+        <!-- First Page Link -->
+        <template x-if="pagination.current_page > 3">
+            <li class="page-item">
+                <a class="page-link" href="#" @click.prevent="goToPage(1)">1</a>
+            </li>
+        </template>
+        <template x-if="pagination.current_page > 3">
+            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+        </template>
+
+        <!-- Page Numbers -->
+        <template x-for="num in visiblePages" :key="num">
+            <li class="page-item" :class="{ 'active': num === pagination.current_page }">
+                <a class="page-link" href="#" @click.prevent="goToPage(num)" x-text="num"></a>
+            </li>
+        </template>
+
+        <!-- Last Page Link -->
+        <template x-if="pagination.current_page < pagination.pages - 2">
+            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+        </template>
+        <template x-if="pagination.current_page < pagination.pages - 2">
+            <li class="page-item">
+                <a class="page-link" href="#" @click.prevent="goToPage(pagination.pages)" x-text="pagination.pages"></a>
+            </li>
+        </template>
+
+        <!-- Next Page Link -->
+        <li class="page-item" :class="{ 'disabled': !pagination.has_next }">
+            <a class="page-link" href="#" @click.prevent="goToPage(pagination.next_num)">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                    <use xlink:href="{{ url_for('static', filename='icons/chevron-right.svg') }}#chevron-right"/>
+                </svg>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+function paginationComponent(initial_pagination) {
+    return {
+        pagination: {},
+        visiblePages: [],
+
+        init() {
+            this.updateVisiblePages();
+        },
+
+        get startEntry() {
+            return (this.pagination.current_page - 1) * this.pagination.per_page + 1;
+        },
+
+        get endEntry() {
+            return Math.min(this.pagination.current_page * this.pagination.per_page, this.pagination.total);
+        },
+
+        updateVisiblePages() {
+            const current = this.pagination.current_page;
+            const total = this.pagination.pages;
+
+            let start = Math.max(1, current - 2);
+            let end = Math.min(total, current + 2);
+
+            if (current <= 3) {
+                end = Math.min(5, total);
+            }
+
+            if (current >= total - 2) {
+                start = Math.max(1, total - 4);
+            }
+
+            this.visiblePages = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+        },
+
+        updatePagination(newPagination) {
+            this.pagination = newPagination;
+            this.updateVisiblePages();
+        },
+
+        goToPage(page) {
+            if (!page || page < 1 || page > this.pagination.pages) return;
+
+            this.$dispatch('search:requested', {
+                page: page
+            });
+        }
+    };
+}
+</script>

@@ -8,13 +8,6 @@
 {% block content %}
 <div class="row row-cards justify-content-center" x-data="hmdaForm({{ form_data }})">
     <div class="col-md-12">
-        <!-- Flash Messages -->
-        <template x-if="message">
-            <div :class="`alert alert-${message.type} alert-dismissible fade show mb-3`" role="alert">
-                <span x-text="message.text"></span>
-                <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
-            </div>
-        </template>
 
         <div class="card">
             <form id="hmda-form" @submit.prevent="submitForm">
@@ -200,7 +193,6 @@ function hmdaForm(initialData) {
         },
         jsonEditor: null,
         metaError: "",
-        message: null,
         errors: {},
         validationRules: {
             name: { required: true, message: 'Name is required.' },
@@ -345,11 +337,9 @@ function hmdaForm(initialData) {
         },
 
         showMessage(type, text) {
-            this.message = { type, text };
-            setTimeout(() => {
-                this.message = null;
-            }, 3000);
+            window.showToast(type, text);
         }
+
     };
 }
 
