@@ -34,5 +34,7 @@ class JobSchema(Schema):
         data.pop('updated_at', None)
         return data
 
-    
+class JobSchemaWithoutTasks(JobSchema):
+    class Meta:
+        exclude = ('tasks',)
 

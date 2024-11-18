@@ -1,76 +1,124 @@
 {% extends 'layouts/base.html' %}
-{% import 'macros/form_field_macros.html' as ffm %}
-{% import 'macros/button_macros.html' as bm %}
 
-{% block title %}Compliance Hub - HMDA Process Details{% endblock %}
+{% block title %}Compliance Hub - View HMDA Process{% endblock %}
 {% block page_title %}
-    HMDA Process Details
+    View HMDA Process
 {% endblock %}
 
 {% block content %}
-<div class="row row-cards justify-content-center" x-data="hmdaViewForm()">
+<div class="row row-cards justify-content-center" x-data="hmdaViewForm({{ form_data }}, {{ form_options }})">
     <div class="col-md-12">
-        <!-- Flash Messages -->
-        <template x-if="message">
-            <div :class="`alert alert-${message.type} alert-dismissible fade show mb-3`" role="alert">
-                <span x-text="message.text"></span>
-                <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
-            </div>
-        </template>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <!-- Tabs for Job Details and Steps/Checklists -->
         <div class="card">
             <div class="card-header">
                 <ul class="nav nav-tabs card-header-tabs">
                     <li class="nav-item">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#job-details-tab">HMDA Job Details</a>
+                        <a class="nav-link active" data-bs-toggle="tab" href="#job-checklists-tab">HMDA Steps/Checklists</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#steps-checklists-tab">HMDA Steps/Checklists</a>
+                        <a class="nav-link" data-bs-toggle="tab" href="#job-details-tab">HMDA Job Details</a>
                     </li>
                 </ul>
             </div>
 
-            <div class="card-body tab-content" x-data="{ errors: {} }">
+            <div class="card-body tab-content">
                 <!-- Tab 1: HMDA Job Details -->
-                <div class="tab-pane fade show active" id="job-details-tab">
+                <div class="tab-pane fade" id="job-details-tab">
                     <form @submit.prevent="confirmJobDetails">
                         <div class="row">
-                            <!-- Display job details as read-only fields -->
-                            <div class="col-md-6">
-                                {{ ffm.render_text_field(form.name, kwargs={'disabled': True, 'x-model': 'form.name' }) }}
+                            <!-- Name Field -->
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" name="name" placeholder="Enter process name" x-model="form.name" disabled @blur="validateField('name')" :class="errors['name'] ? 'form-control is-invalid' : 'form-control'">
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                {{ ffm.render_date_field(form.start_time, kwargs={ 'disabled': True, 'x-model': 'form.start_time' }) }}
+    
+                            <!-- Workflow Type Dropdown -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="workflow_type" class="form-label">Workflow Type</label>
+                                    <select name="workflow_type" x-model="form.workflow_type" disabled @blur="validateField('workflow_type')" :class="errors['workflow_type'] ? 'form-select is-invalid' : 'form-select'">
+                                        <template x-for="option in options.workflow_type_options" :key="option.name">
+                                            <option :value="option.name" :selected="option.name === form.workflow_type" x-text="option.value"></option>
+                                        </template>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-6 mt-1">
-                                {{ ffm.render_select_field(form.workflow_type, kwargs={ 'disabled': True, 'x-model': 'form.workflow_type' }) }}
+    
+                            <!-- Workflow Dropdown -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="workflow_id" class="form-label">Workflow</label>
+                                    <select name="workflow_id" x-model="form.workflow_id" disabled @blur="validateField('workflow_id')" x-on:change="fetchWorkflowTasks" :class="errors['workflow_id'] ? 'form-select is-invalid' : 'form-select'">
+                                        <template x-for="option in options.workflow_options" :key="option.id">
+                                            <option :value="option.id" :selected="option.id === form.workflow_id" x-text="option.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-6 mt-1">
-                                {{ ffm.render_select_field(form.workflow_id, kwargs={ 'disabled': True, 'x-model': 'form.workflow_id' }) }}
+    
+                            <!-- Status Dropdown -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Status</label>
+                                    <select name="status" x-model="form.status" disabled @blur="validateField('status')" :class="errors['status'] ? 'form-select is-invalid' : 'form-select'">
+                                        <template x-for="option in options.status_options" :key="option.name">
+                                            <option :value="option.name" :selected="option.name === form.status" x-text="option.value"></option>
+                                        </template>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-12 mt-1">
-                                {{ ffm.render_textarea_field(form.description, kwargs={ 'readonly': True, 'x-model': 'form.description' }) }}
+    
+                            <!-- Scheduled Run Time -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="next_run_time" class="form-label">Scheduled Run Time</label>
+                                    <input type="date" 
+                                           name="next_run_time" 
+                                           x-model="form.next_run_time" 
+                                           disabled
+                                           @blur="validateField('next_run_time')" 
+                                           placeholder="Enter schedule date" 
+                                           :disabled="!['New', 'Failed'].includes(form.status)"
+                                           :class="errors['next_run_time'] ? 'form-control is-invalid' : 'form-control'">
+                                    <div x-cloak x-show="errors['next_run_time']" class="invalid-feedback" x-text="errors['next_run_time']"></div>
+                                </div>
                             </div>
-                        </div>
-                        <!-- Optional submit button -->
-                        <div class="d-flex mt-3">
-                            <button type="submit" class="btn btn-primary ms-auto">
-                                Confirm Job Details
-                            </button>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="start_time" class="form-label">Start Time</label>
+                                    <input type="date" name="start_time" class="form-control" x-model="form.start_time" x-bind:disabled="true">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="end_time" class="form-label">End Time</label>
+                                    <input type="date" name="end_time" class="form-control" x-model="form.end_time" x-bind:disabled="true">
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex">
+                                <button type="button" class="btn btn-secondary" @click="window.location.href = '{{ url_for('hmda.list_hmda_jobs') }}'">Cancel</button>
+                                <button type="submit" class="btn btn-primary ms-auto">
+                                    Create HMDA Job
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
 
                 <!-- Tab 2: HMDA Steps/Checklists -->
-                <div class="tab-pane fade" id="steps-checklists-tab">
+                <div class="tab-pane fade show active" id="job-checklists-tab">
                     <div class="table-responsive">
-                        <table class="table table-bordered mb-0 mt-0">
+                        <table class="table table-bordered mb-0 mt-0 table-vcenter">
                             <thead>
                                 <tr>
                                     <th class="col-md-1">Order</th>
-                                    <th class="col-md-5">Step Name</th>
-                                    <th class="col-md-1">Schedule Type</th>
+                                    <th class="col-md-5">Task Name</th>
+                                    <th class="col-md-1">Task Type</th>
                                     <th class="col-md-1">Start Time</th>
                                     <th class="col-md-1">Completed Time</th>
                                     <th class="col-md-1">Retries</th>
@@ -79,27 +127,29 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <template x-for="step in workflowSteps" :key="step.order">
+                                <template x-for="task in form.tasks" :key="task.id">
                                     <tr>
-                                        <td x-text="step.order"></td>
-                                        <td x-text="step.name"></td>
-                                        <td x-text="{
-                                            'Automated': '📅 Automated',
-                                            'Weekly': '📆 Weekly',
-                                            'Monthly': '🗓 Monthly',
-                                            'Manual': '⏳ Manual'
-                                        }[step.job_task_type]"></td>
-                                        <td x-text="step.started_at"></td>
-                                        <td x-text="step.completed_at"></td>
-                                        <td x-text="step.retries"></td>
+                                        <td x-text="task.order"></td>
+                                        <td x-text="task.name"></td>
+                                        <td class="text-nowrap" x-text="{
+                                            'AUTO': '⏳ AUTO',
+                                            'MANUAL': '📍 MANUAL'
+                                        }[task.job_task_type]"></td>
+                                        <td x-text="task.started_at"></td>
+                                        <td x-text="task.completed_at"></td>
+                                        <td x-text="task.retries"></td>
                                         <td>
                                             <span :class="{
-                                                'badge bg-success text-green-fg': step.status === 'Completed',
-                                                'badge bg-warning text-blue-fg': step.status !== 'Completed'
-                                            }" x-text="step.status"></span>
+                                                'badge bg-secondary text-secondary-fg': task.status === 'NEW',
+                                                'badge bg-info text-info-fg': task.status === 'PENDING',
+                                                'badge bg-warning text-warning-fg': task.status === 'RUNNING',
+                                                'badge bg-success text-success-fg': task.status === 'COMPLETED',
+                                                'badge bg-danger text-danger-fg': task.status === 'ERROR',
+                                                'badge bg-secondary text-secondary-fg': task.status === 'CANCELED'
+                                            }" x-text="task.status"></span>
                                         </td>
                                         <td>
-                                            <a class="btn btn-icon" @click.prevent="executeJob(step)" title="Execute Job">
+                                            <a class="btn btn-icon" @click.prevent="executeJob(task)" title="Execute Job">
                                                 <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
                                                     <use xlink:href="{{ url_for('static', filename='icons/play.svg') }}#play" />
                                                 </svg>
@@ -126,10 +176,9 @@
                 <div class="modal-body">
                     <label class="form-label">Set Job Status</label>
                     <select class="form-select" x-model="selectedJobTask.status">
-                        <option value="Pending">Pending</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Failed">Failed</option>
+                        <template x-for="option in options.status_options" :key="option.name">
+                            <option :value="option.name" x-text="option.value"></option>
+                        </template>
                     </select>
                 </div>
                 <div class="modal-footer">
@@ -163,51 +212,80 @@
 
 {% block scripts %}
 <script>
-function hmdaViewForm() {
+function hmdaViewForm(initialData, formOptions) {
     return {
-        form: {
-            name: "{{ hmda_job.name }}",
-            start_time: "{{ hmda_job.start_time }}",
-            workflow_type: "{{ hmda_job.workflow_type }}",
-            workflow_id: "{{ hmda_job.workflow_id }}",
-            description: "{{ hmda_job.description }}"
+        csrfToken: document.querySelector('input[name="csrf_token"]').value,
+        form: { ...initialData },
+        options: {
+            workflow_type_options: formOptions.workflow_type_options || [],
+            status_options: formOptions.status_options || [],
+            workflow_options: formOptions.workflow_options || [],
+            task_type_options: formOptions.task_type_options || [],
         },
-        workflowSteps: JSON.parse(`{{ hmda_job.steps | tojson | safe }}`),
-        message: null,
         showManualModal: false,
         showAutoModal: false,
         selectedJobTask: {
-            name: '',
-            job_task_type: '',
-            status: '',
-            order: ''
+            id: null,
+            name: "",
+            job_task_type: "",
+            meta: '{}'
         },
+        errors: {},
         
-        executeJob(step) {
-            this.selectedJobTask = step;
-            if (step.job_task_type === 'Manual') {
+        executeJob(task) {
+            this.selectedJobTask = task;
+            if (task.job_task_type === 'MANUAL') {
                 const modalEl = document.getElementById('manualJobModal');
                 const modalInstance = new bootstrap.Modal(modalEl, {
                     backdrop: 'static',
                     keyboard: false
                 });
                 modalInstance.show();
-            } else if (step.job_task_type === 'Automated') {
+            } else if (task.job_task_type === 'AUTO') {
+                this.triggerAutoJob();
+            }
+        },
+
+        triggerAutoJob() {
+            fetch(`/api/hmda/job-tasks/${this.selectedJobTask.id}/execute`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': this.csrfToken
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                //this.showMessage('success', `Automated job "${this.selectedJobTask.name}" has been triggered successfully.`);
+                // Optionally update the task status in the UI
+                const taskIndex = this.form.tasks.findIndex(t => t.id === this.selectedJobTask.id);
+                if (taskIndex !== -1) {
+                    this.form.tasks[taskIndex].status = 'RUNNING';
+                }
+
                 const modalEl = document.getElementById('autoJobModal');
                 const modalInstance = new bootstrap.Modal(modalEl, {
                     backdrop: 'static',
                     keyboard: false
                 });
                 modalInstance.show();
-                // Additional logic for triggering automated jobs can be added here
-            }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.showMessage('danger', `Failed to trigger job: ${error.message}`);
+            });
         },
 
         saveManualJobStatus() {
             // Logic to save manual job status to the backend
-            const stepIndex = this.workflowSteps.findIndex(t => t.order === this.selectedJobTask.order);
-            if (stepIndex !== -1) {
-                this.workflowSteps[stepIndex] = { ...this.selectedJobTask };
+            const taskIndex = this.form.tasks.findIndex(t => t.id === this.selectedJobTask.id);
+            if (taskIndex !== -1) {
+                this.form.tasks[taskIndex] = { ...this.selectedJobTask };
             }
             this.showMessage('success', `Job status updated to "${this.selectedJobTask.status}" for ${this.selectedJobTask.name}.`);
             this.closeModals();
@@ -233,10 +311,7 @@ function hmdaViewForm() {
         },
 
         showMessage(type, text) {
-            this.message = { type, text };
-            setTimeout(() => {
-                this.message = null;
-            }, 3000);
+            window.showToast(type, text);
         }
     };
 }

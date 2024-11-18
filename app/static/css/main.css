@@ -1,4 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+@font-face {
+  font-family: "Inter";
+  src: url("/static/fonts/Inter.ttf") format("truetype");
+  font-weight: 100 200 300 400 500 600 700 800 900;
+  font-style: normal;
+}
+
 :root {
+  --tblr-body-font-family: "Inter", sans-serif, Arial;
   --tblr-primary: #4caf50; /* Custom primary color */
   --tblr-secondary: #607d8b; /* Custom secondary color */
   --tblr-success: #81c784; /* Success color */
@@ -28,7 +38,7 @@ body.theme-dark {
 body {
   background-color: var(--tblr-body-bg);
   color: var(--tblr-text-color);
-  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--tblr-body-font-family);
   line-height: 1.6;
 }
 
@@ -52,20 +62,95 @@ body {
   background-color: var(--tblr-navbar-bg);
   color: var(--tblr-text-color);
   box-shadow: 0 4px 8px var(--tblr-box-shadow);
+  font-weight: 500;
+}
+
+.navbar-brand {
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: #fff;
+}
+
+.nav-link {
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--tblr-primary);
 }
 
 /* Custom card styles */
 .card {
+  border: none;
+  border-radius: 8px;
   background-color: var(--tblr-card-bg);
-  border: 1px solid var(--tblr-border-color);
   box-shadow: 0 4px 8px var(--tblr-box-shadow);
-  color: var(--tblr-text-color);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-header {
+  background-color: var(--tblr-primary);
+  color: #fff;
+  font-weight: 600;
+  border-bottom: 2px solid var(--tblr-border-color);
 }
 
 .card-hover:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 16px var(--tblr-box-shadow);
+  transform: translateY(-8px);
+  box-shadow: 0 8px 16px var(--tblr-box-shadow);
+}
+
+/* Button styles */
+.btn {
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+}
+
+.btn-primary {
+  background-color: var(--tblr-primary);
+  border-color: var(--tblr-primary);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #388e3c;
+  border-color: #388e3c;
+}
+
+.btn-secondary {
+  background-color: var(--tblr-secondary);
+  border-color: var(--tblr-secondary);
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background-color: #455a64;
+  border-color: #455a64;
+}
+
+/* Table styles */
+.table {
+  background-color: var(--tblr-card-bg);
+  border: 1px solid var(--tblr-border-color);
+  font-size: 0.95rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px var(--tblr-box-shadow);
+}
+
+.table th {
+  background-color: var(--tblr-primary);
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+}
+
+.table td {
+  border-top: 1px solid var(--tblr-border-color);
+}
+
+.table tr:hover {
+  background-color: #f1f8e9;
 }
 
 /* Custom link styles */
@@ -83,10 +168,11 @@ a:hover {
 input,
 textarea,
 select {
+  font-family: var(--tblr-body-font-family);
+  border-radius: 6px;
   border: 1px solid var(--tblr-border-color);
-  border-radius: 4px;
-  padding: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0.8rem;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -94,7 +180,7 @@ input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--tblr-primary);
-  box-shadow: 0 0 8px var(--tblr-box-shadow);
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
   outline: none;
 }
 
@@ -116,6 +202,45 @@ input,
 textarea,
 select {
   transition: all 0.3s ease;
+}
+
+/* Toast styles */
+.toast {
+  min-width: 300px;
+  max-width: 400px;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  animation: fade-in-out 4s ease-in-out;
+}
+
+.toast-body {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.toast-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.toast.show {
+  opacity: 1 !important;
+}
+
+@keyframes fade-in-out {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  10%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }
 
 /* Override Bootstrap's stylings */

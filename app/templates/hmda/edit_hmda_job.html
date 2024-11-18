@@ -8,13 +8,6 @@
 {% block content %}
 <div class="row row-cards justify-content-center" x-data="hmdaEditForm({{ form_data }}, {{ form_options }})">
     <div class="col-md-12">
-        <!-- Flash Messages -->
-        <template x-if="message">
-            <div :class="`alert alert-${message.type} alert-dismissible fade show mb-3`" role="alert">
-                <span x-text="message.text"></span>
-                <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
-            </div>
-        </template>
 
         <!-- Edit Job Form -->
         <div class="card">
@@ -217,7 +210,6 @@ function hmdaEditForm(initialData, formOptions) {
             workflow_options: formOptions.workflow_options || [],
             task_type_options: formOptions.task_type_options || [],
         },
-        message: null,
         editingJobTask: {
             id: null,
             name: "",
@@ -248,7 +240,7 @@ function hmdaEditForm(initialData, formOptions) {
             .then(data => {
                 this.showMessage('success', data.message);
                 setTimeout(() => {
-                    //window.location.href = '{{ url_for("hmda.list_hmda_jobs") }}';
+                    window.location.href = '{{ url_for("hmda.list_hmda_jobs") }}';
                 }, 1500);
             })
             .catch(err => {
@@ -304,10 +296,7 @@ function hmdaEditForm(initialData, formOptions) {
         },
 
         showMessage(type, text) {
-            this.message = { type, text };
-            setTimeout(() => {
-                this.message = null;
-            }, 3000);
+            window.showToast(type, text);
         }
     };
 }

@@ -1,8 +1,9 @@
 from flask import current_app as app
 from app import db
 from app.models import Job, Workflow, JobTask
-from app.models.enum import WorkflowType
+from app.models.enum import WorkflowType, JobTaskStatus
 from sqlalchemy import or_, func, String
+from app.tasks.hmda_tasks import HmdaTasks
 
 class HMDAService:
     # Create operations
@@ -167,3 +168,27 @@ class HMDAService:
 
         db.session.delete(job)
         db.session.commit()
+
+    @staticmethod
+    def execute_hmda_job_task(job_task_id):
+        """
+        Execute a HMDA job task.
+
+        :param job_task_id: ID of the job task to execute
+        """
+        try:
+            # Update the job task status to RUNNING first
+            task = JobTask(id=job_task_id, status=JobTaskStatus.RUNNING.name)
+            db.session.merge(task)
+            db.session.commit()
+
+            # Then dispatch the task
+            HmdaTasks.process_hmda_error_checking({'job_task_id': job_task_id})
+        except Exception as e:
+            # If dispatch fails, update status to ERROR
+            task = JobTask(id=job_task_id, status=JobTaskStatus.ERROR.name)
+            db.session.merge(task)
+            db.session.commit()
+            app.logger.error(f"Failed to execute HMDA job task {job_task_id}: {str(e)}")
+            raise  # Re-raise the exception after handling
+        

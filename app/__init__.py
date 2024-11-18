@@ -4,16 +4,16 @@ from .config import Config
 from .extensions import db, migrate
 from app.utils import logging_util
 from flask.cli import with_appcontext
-from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
+from flask_wtf.csrf import CSRFProtect, CSRFError
 import click
 
 from app.routes.workflows import workflow_bp, workflow_api_bp
 from app.routes.home import home_bp
 from app.routes.hmda import hmda_bp, hmda_api_bp
 from app.routes.user import user_bp
-
 from app.utils.context_processors import ContextProcessors
 
+# Initialize CSRF protection
 csrf = CSRFProtect()
 
 def create_app():
@@ -53,6 +53,16 @@ def create_app():
         from app.seeds.seed_data import seed_database
         seed_database()
         click.echo('Database seeded successfully!')
+    
+    @app.cli.command("run-huey")
+    @with_appcontext
+    def run_huey():
+        """Run Huey consumer."""
+        from app.utils.huey_config import huey
+        from huey.consumer import Consumer
+        
+        consumer = Consumer(huey)
+        consumer.run()
 
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
