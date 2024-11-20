@@ -1,0 +1,10 @@
+{
+    "acaps": {
+        "input_file_path": "/Users/djay/dev/code/djay93/hweb/config/test1.xlsx",
+        "sheet_name": "last-sheet",
+        "target_columns": ["B"],
+        "replacer_file_path": "/Users/djay/dev/code/djay93/hweb/config/error_checking.csv",
+        "remove_empty_rows": true,
+        "sort_columns": ["B"]
+    }
+}

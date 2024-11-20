@@ -1,9 +1,15 @@
+import json
+import logging
+from datetime import datetime
 from flask import current_app as app
 from app import db
 from app.models import Job, Workflow, JobTask
-from app.models.enum import WorkflowType, JobTaskStatus
+from app.models.enum import WorkflowType, TaskStatus
 from sqlalchemy import or_, func, String
 from app.tasks.hmda_tasks import HmdaTasks
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 class HMDAService:
     # Create operations
@@ -177,18 +183,37 @@ class HMDAService:
         :param job_task_id: ID of the job task to execute
         """
         try:
-            # Update the job task status to RUNNING first
-            task = JobTask(id=job_task_id, status=JobTaskStatus.RUNNING.name)
-            db.session.merge(task)
+             # Query the job task first
+            task = JobTask.query.get(job_task_id)
+            if not task:
+                raise ValueError(f"Job task with ID {job_task_id} not found")
+
+            # Update the job task status to RUNNING
+            task.status = TaskStatus.RUNNING.name
+            task.started_at = datetime.now()
             db.session.commit()
 
+            payload = {'job_task_id': job_task_id, **json.loads(task.meta)}
+            logger.info(payload)
+
             # Then dispatch the task
-            HmdaTasks.process_hmda_error_checking({'job_task_id': job_task_id})
+            HmdaTasks.process_hmda_error_checking(payload)
         except Exception as e:
             # If dispatch fails, update status to ERROR
-            task = JobTask(id=job_task_id, status=JobTaskStatus.ERROR.name)
+            task = JobTask(id=job_task_id, status=TaskStatus.ERROR.name)
             db.session.merge(task)
             db.session.commit()
             app.logger.error(f"Failed to execute HMDA job task {job_task_id}: {str(e)}")
             raise  # Re-raise the exception after handling
-        
+    
+    @staticmethod
+    def update_hmda_job_task(task_id: int, task_data: dict) -> JobTask:
+        task = JobTask.query.get(task_id)
+        if not task:
+            raise ValueError(f"Job task with ID {task_id} not found")
+            
+        for key, value in task_data.items():
+            setattr(task, key, value)
+            
+        db.session.commit()
+        return task

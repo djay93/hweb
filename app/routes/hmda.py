@@ -221,7 +221,6 @@ def api_update_hmda_job(job_id):
 
         # Update job tasks
         if tasks:
-            logger.info(f"tasks: {tasks}")
             hmda_job_tasks_data = hmda_job_tasks_schema.load(tasks)
             HMDAService.update_hmda_job_tasks(job_id, hmda_job_tasks_data)
             logger.info(f"Job tasks for HMDA Job ID {job_id} updated successfully.")
@@ -242,8 +241,35 @@ def api_update_hmda_job(job_id):
 @hmda_api_bp.route('/job-tasks/<int:job_task_id>/execute', methods=['POST'])
 def api_execute_hmda_job_task(job_task_id):
     try:
+        payload = {
+            "job_task_id": 12345,
+            "acaps": {
+                "input_file_path": "/Users/djay/dev/code/djay93/hweb/app/tasks/test1.xlsx",
+                "sheet_name": "last-sheet",
+                "target_columns": ["B"],
+                "replacer_file_path": "/Users/djay/dev/code/djay93/hweb/config/error_checking.csv",
+                "remove_empty_rows": True,
+                "sort_columns": ["B"]
+            }
+        }
         HMDAService.execute_hmda_job_task(job_task_id)
         return jsonify({'message': 'HMDA job task executed successfully!'}), 200
     except Exception as e:
         logger.error(f"Error executing HMDA job task: {str(e)}")
         return jsonify({'error': f'Error executing HMDA job task: {str(e)}'}), 500
+
+@hmda_api_bp.route('/job-tasks/<int:job_task_id>', methods=['PUT'])
+def api_update_hmda_job_task(job_task_id):
+    body = request.get_json()
+    if not body:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+
+    try:
+        job_task_data = JobTaskSchema().load(body)
+        updated_task = HMDAService.update_hmda_job_task(task_id=job_task_id, task_data=job_task_data)
+        return jsonify({'message': 'HMDA job task updated successfully!'}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        logger.error(f"Error updating HMDA job task: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500

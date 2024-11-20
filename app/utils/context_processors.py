@@ -7,8 +7,8 @@ class ContextProcessors:
                 'label': 'HMDA',
                 'class': 'graphs',
                 'subpages': [
-                    {'label': 'View Weekly Reports', 'url': 'hmda.list_hmda_jobs', 'external': False},
-                    {'label': 'Add Weekly Process', 'url': 'hmda.new_hmda_job', 'external': False},
+                    {'label': 'View HMDA Jobs', 'url': 'hmda.list_hmda_jobs', 'external': False},
+                    {'label': 'Create HMDA Job', 'url': 'hmda.new_hmda_job', 'external': False},
                 ]
             },
             {
@@ -16,7 +16,7 @@ class ContextProcessors:
                 'class': 'iPlugin',
                 'subpages': [
                     {'label': 'View Workflows', 'url': 'workflows.list_workflows', 'external': False},
-                    {'label': 'Add Workflow', 'url': 'workflows.new_workflow', 'external': False},
+                    {'label': 'Create Workflow', 'url': 'workflows.new_workflow', 'external': False},
                 ]
             },
             {

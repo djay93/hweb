@@ -1,7 +1,6 @@
 from flask import Blueprint, request, render_template, redirect, url_for, jsonify, flash
 from marshmallow import ValidationError
 from app.services import WorkflowService
-from app.forms.workflow_form import WorkflowForm
 from app.models.enum import WorkflowType
 from app.schemas import WorkflowSchema, WorkflowTaskSchema
 

@@ -5,8 +5,8 @@ class JobStatus(Enum):
     NEW = "NEW"
     PENDING = "PENDING"
     RUNNING = "RUNNING"
-    COMPLETED = "COMPLETED"
-    ERROR = "ERROR"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
     CANCELED = "CANCELED"
 
     @classmethod
@@ -16,8 +16,8 @@ class JobStatus(Enum):
 class TaskStatus(Enum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"
-    COMPLETED = "COMPLETED"
-    ERROR = "ERROR"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
     CANCELED = "CANCELED"
     SKIPPED = "SKIPPED"
 

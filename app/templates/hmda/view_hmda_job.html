@@ -143,18 +143,23 @@
                                                 'badge bg-secondary text-secondary-fg': task.status === 'NEW',
                                                 'badge bg-info text-info-fg': task.status === 'PENDING',
                                                 'badge bg-warning text-warning-fg': task.status === 'RUNNING',
-                                                'badge bg-success text-success-fg': task.status === 'COMPLETED',
+                                                'badge bg-success text-success-fg': task.status === 'SUCCESS',
                                                 'badge bg-danger text-danger-fg': task.status === 'ERROR',
                                                 'badge bg-secondary text-secondary-fg': task.status === 'CANCELED'
                                             }" x-text="task.status"></span>
                                         </td>
                                         <td>
-                                            <a class="btn btn-icon" @click.prevent="executeJob(task)" title="Execute Job">
+                                            <a class="btn btn-icon"
+                                               @click.prevent="executeJob(task)" 
+                                               title="Execute Job"
+                                               :class="{
+                                                   'disabled': ['RUNNING', 'SUCCESS'].includes(task.status)
+                                               }">
                                                 <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
                                                     <use xlink:href="{{ url_for('static', filename='icons/play.svg') }}#play" />
                                                 </svg>
                                             </a>
-                                        </td>
+                                        </td>                                        
                                     </tr>
                                 </template>
                             </tbody>

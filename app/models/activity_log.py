@@ -8,6 +8,7 @@ class ActivityLog(db.Model):
     user_id = db.Column(db.Integer, nullable=True)
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflows.id', name='fk_activity_logs_workflow'), nullable=True)
     job_id = db.Column(db.Integer, db.ForeignKey('jobs.id', name='fk_activity_logs_job'), nullable=True)
+    job_task_id=db.Column(db.Integer, db.ForeignKey('jobs.id', name='fk_activity_logs_job_task'), nullable=True)
     activity_type = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(50), nullable=True, default="IN_PROGRESS")
     execution_time = db.Column(db.Float, nullable=True)

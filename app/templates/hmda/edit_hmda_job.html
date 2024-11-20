@@ -127,7 +127,14 @@
                                     <td x-text="task.name"></td>
                                     <td x-text="task.job_task_type"></td>
                                     <td>
-                                        <span :class="task.status === 'Completed' ? 'badge bg-success' : 'badge bg-warning'" x-text="task.status"></span>
+                                        <span :class="{
+                                            'badge bg-secondary text-secondary-fg': task.status === 'NEW',
+                                            'badge bg-info text-info-fg': task.status === 'PENDING',
+                                            'badge bg-warning text-warning-fg': task.status === 'RUNNING',
+                                            'badge bg-success text-success-fg': task.status === 'SUCCESS',
+                                            'badge bg-danger text-danger-fg': task.status === 'ERROR',
+                                            'badge bg-secondary text-secondary-fg': task.status === 'CANCELED'
+                                        }" x-text="task.status"></span>
                                     </td>
                                     <td x-text="task.started_at"></td>
                                     <td x-text="task.completed_at"></td>
@@ -227,7 +234,6 @@ function hmdaEditForm(initialData, formOptions) {
         },
 
         submitForm() {
-            console.log('Submitting form:', this.form);
             fetch(`/api/hmda/${this.form.id}`, {
                 method: 'PUT',
                 headers: {
@@ -236,7 +242,12 @@ function hmdaEditForm(initialData, formOptions) {
                 },
                 body: JSON.stringify(this.form),
             })
-            .then(res => res.json())
+            .then(res => res.json().then(data => {
+                if (!res.ok) {
+                    throw data;
+                }
+                return data;
+            }))
             .then(data => {
                 this.showMessage('success', data.message);
                 setTimeout(() => {
@@ -244,8 +255,19 @@ function hmdaEditForm(initialData, formOptions) {
                 }, 1500);
             })
             .catch(err => {
-                console.error('Failed to update job:', err);
-                this.showMessage('danger', 'Failed to update job.');
+                this.errors = err.errors || {};
+                if (err.errors) {
+                    const extractMessages = (errors) => {
+                        return Object.values(errors).flatMap(value =>
+                            typeof value === 'object' ? extractMessages(value) : value
+                        );
+                    };
+                    const allMessages = extractMessages(err.errors).join('; ');
+                    this.showMessage('danger', `Failed to update job. Validation errors: ${allMessages}`);
+                } else {
+                    this.showMessage('danger', 'Failed to update job.');
+                }
+                console.error('Error updating job:', err);
             });
         },
 
@@ -291,8 +313,41 @@ function hmdaEditForm(initialData, formOptions) {
             const index = this.form.tasks.findIndex(t => t.id === this.editingJobTask.id);
             if (index !== -1) {
                 this.form.tasks[index] = { ...this.editingJobTask };
+
+                fetch(`/api/hmda/job-tasks/${this.editingJobTask.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.csrfToken,
+                    },
+                    body: JSON.stringify(this.editingJobTask),
+                })
+                .then(res => res.json().then(data => {
+                    if (!res.ok) {
+                        throw data;
+                    }
+                    return data;
+                }))
+                .then(data => {
+                    this.showMessage('success', data.message);
+                    this.closeTaskModal();
+                })
+                .catch(err => {
+                    this.errors = err.errors || {};
+                    if (err.errors) {
+                        const extractMessages = (errors) => {
+                            return Object.values(errors).flatMap(value =>
+                                typeof value === 'object' ? extractMessages(value) : value
+                            );
+                        };
+                        const allMessages = extractMessages(err.errors).join('; ');
+                        this.showMessage('danger', `Failed to update job. Validation errors: ${allMessages}`);
+                    } else {
+                        this.showMessage('danger', 'Failed to update job.');
+                    }
+                    console.error('Error updating job:', err);
+                });
             }
-            this.closeTaskModal();
         },
 
         showMessage(type, text) {
