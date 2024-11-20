@@ -273,3 +273,22 @@ def api_update_hmda_job_task(job_task_id):
     except Exception as e:
         logger.error(f"Error updating HMDA job task: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
+    
+@hmda_api_bp.route('/jobs/<int:job_id>/tasks', methods=['GET'])
+def api_get_hmda_job_tasks(job_id):
+    try:
+        hmda_job = HMDAService.get_hmda_job_by_id(job_id)
+        if not hmda_job:
+            logger.warning(f"HMDA Job with ID {job_id} not found.")
+            return jsonify({'error': 'Job not found'}), 404
+
+        # serialize job data
+        hmda_job_data = hmda_job_schema.dump(hmda_job)
+        tasks = hmda_job_data.get('tasks', [])
+        
+        logger.info(f"Successfully retrieved tasks for HMDA Job ID {job_id}")
+        return jsonify({'tasks': tasks}), 200
+        
+    except Exception as e:
+        logger.error(f"Error retrieving tasks for HMDA Job ID {job_id}: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500

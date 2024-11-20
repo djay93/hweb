@@ -112,6 +112,28 @@
 
                 <!-- Tab 2: HMDA Steps/Checklists -->
                 <div class="tab-pane fade show active" id="job-checklists-tab">
+                    <!-- Bulk Actions & Search bar -->
+                    <div class="d-flex py-3">
+                        <div class="text-secondary" role="group">
+                            <button class="btn dropdown-toggle align-text-top" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                Bulk Actions
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-start">
+                                <a class="dropdown-item" href="#" @click.prevent="confirmDeleteSelected">Delete Selected</a>
+                                <a class="dropdown-item" href="#">Download Report</a>
+                            </div>
+                        </div>
+                        <div class="ms-auto text-secondary">
+                            <a class="btn btn-blue d-none d-sm-inline-block" @click="refreshTasks">
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                                    <use xlink:href="{{ url_for('static', filename='icons/refresh.svg') }}#refresh" />
+                                </svg>
+                                Refresh Tasks
+                            </a>
+                        </div>
+                    </div>
+
+
                     <div class="table-responsive">
                         <table class="table table-bordered mb-0 mt-0 table-vcenter">
                             <thead>
@@ -294,6 +316,23 @@ function hmdaViewForm(initialData, formOptions) {
             }
             this.showMessage('success', `Job status updated to "${this.selectedJobTask.status}" for ${this.selectedJobTask.name}.`);
             this.closeModals();
+        },
+
+        refreshTasks() {
+            fetch(`/api/hmda/jobs/${this.form.id}/tasks`, {
+                headers: {
+                    'X-CSRF-Token': this.csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.form.tasks = data.tasks;
+                this.showMessage('success', 'Tasks refreshed successfully');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.showMessage('danger', 'Failed to refresh tasks');
+            });
         },
 
         closeModals() {
