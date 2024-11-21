@@ -241,17 +241,6 @@ def api_update_hmda_job(job_id):
 @hmda_api_bp.route('/job-tasks/<int:job_task_id>/execute', methods=['POST'])
 def api_execute_hmda_job_task(job_task_id):
     try:
-        payload = {
-            "job_task_id": 12345,
-            "acaps": {
-                "input_file_path": "/Users/djay/dev/code/djay93/hweb/app/tasks/test1.xlsx",
-                "sheet_name": "last-sheet",
-                "target_columns": ["B"],
-                "replacer_file_path": "/Users/djay/dev/code/djay93/hweb/config/error_checking.csv",
-                "remove_empty_rows": True,
-                "sort_columns": ["B"]
-            }
-        }
         HMDAService.execute_hmda_job_task(job_task_id)
         return jsonify({'message': 'HMDA job task executed successfully!'}), 200
     except Exception as e:

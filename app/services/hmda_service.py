@@ -6,7 +6,7 @@ from app import db
 from app.models import Job, Workflow, JobTask
 from app.models.enum import WorkflowType, TaskStatus
 from sqlalchemy import or_, func, String
-from app.tasks.hmda_tasks import HmdaTasks
+from app.tasks import tasks
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -194,13 +194,14 @@ class HMDAService:
             db.session.commit()
 
             payload = {'job_task_id': job_task_id, **json.loads(task.meta)}
-            logger.info(payload)
 
+            print(f"Dispatching task: {tasks.hmda_tasks.process_hmda_error_checking.name}")
+            
             # Then dispatch the task
-            HmdaTasks.process_hmda_error_checking(payload)
+            tasks.hmda_tasks.process_hmda_error_checking(payload)
         except Exception as e:
-            # If dispatch fails, update status to ERROR
-            task = JobTask(id=job_task_id, status=TaskStatus.ERROR.name)
+            # If dispatch fails, update status to FAILED
+            task = JobTask(id=job_task_id, status=TaskStatus.FAILED.name)
             db.session.merge(task)
             db.session.commit()
             app.logger.error(f"Failed to execute HMDA job task {job_task_id}: {str(e)}")

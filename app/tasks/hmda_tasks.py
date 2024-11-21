@@ -1,6 +1,4 @@
-from flask import current_app
 from marshmallow import Schema, fields
-from app.utils.huey_config import huey
 import logging
 from app.core.decorators import with_app_context
 from app.tasks.hmda_error_checking_service import ErrorCheckingService
@@ -21,8 +19,12 @@ class HMDAErrorCheckingTaskSchema(Schema):
     acaps = fields.Nested(ErrorInputSchema, required=True)
 
 class HmdaTasks:
+    def __init__(self, huey):
+        self.huey = huey
+        # Register tasks during initialization
+        self.process_hmda_error_checking = self.huey.task(name='process_hmda_error_checking')(self.process_hmda_error_checking)
+    
     @staticmethod
-    @huey.task()
     @with_app_context
     def process_hmda_error_checking(args_dict):
         try:
