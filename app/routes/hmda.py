@@ -32,7 +32,7 @@ def list_hmda_jobs():
         'pagination': {}  # Will be populated by API call
     }
     
-    return render_template('hmda/list_hmda_jobs.html', initial_data=json.dumps(initial_data))
+    return render_template('data_prep/hmda/list_hmda_jobs.html', initial_data=json.dumps(initial_data))
 
 @hmda_bp.route('/new', methods=['GET'])
 def new_hmda_job():
@@ -50,7 +50,7 @@ def new_hmda_job():
     }
     serialized_data = json.dumps(form_data)
     logger.info("Loaded form for creating a new HMDA job.")
-    return render_template('hmda/new_hmda_job.html', form_data=serialized_data)
+    return render_template('data_prep/hmda/new_hmda_job.html', form_data=serialized_data)
 
 
 @hmda_bp.route('/<int:hmda_id>/details', methods=['GET'])
@@ -80,7 +80,7 @@ def view_hmda_job(hmda_id):
         flash("An error occurred while loading the job for editing.", "error")
         return redirect(url_for('hmda.list_hmda_jobs')), 500
 
-    return render_template('hmda/view_hmda_job.html', form_data=json.dumps(hmda_job_data), form_options=json.dumps(form_options))
+    return render_template('data_prep/hmda/view_hmda_job.html', form_data=json.dumps(hmda_job_data), form_options=json.dumps(form_options))
 
 
 @hmda_bp.route('/<int:hmda_id>/edit', methods=['GET'])
@@ -110,7 +110,7 @@ def edit_hmda_job(hmda_id):
         flash("An error occurred while loading the job for editing.", "error")
         return redirect(url_for('hmda.list_hmda_jobs')), 500
 
-    return render_template('hmda/edit_hmda_job.html', form_data=json.dumps(hmda_job_data), form_options=json.dumps(form_options))
+    return render_template('data_prep/hmda/edit_hmda_job.html', form_data=json.dumps(hmda_job_data), form_options=json.dumps(form_options))
 
 
 # ----------------------------------------

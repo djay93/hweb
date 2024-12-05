@@ -86,20 +86,32 @@
 
             <main class="page-body">
                 <div class="container-xxl">
-                    <!--nav class="mb-3" aria-label="breadcrumb">
+                    <!-- Breadcrumb -->
+                    <nav class="mb-3" aria-label="breadcrumb">
                         {% block breadcrumb %}
-                            <ol class="breadcrumb">
-                                <li class="breadcrumb-item">
-                                    <a href="{{ url_for('user.dashboard') }}">
-                                        <svg class="icon" xmlns="http://www.w3.org/2000/svg">
+                        {% set current_route = request.endpoint %}
+                        {% if breadcrumb_map and current_route in breadcrumb_map %}
+                            <ol class="breadcrumb breadcrumb-arrows">
+                                <!-- <li class="breadcrumb-item">
+                                    <a href="{{ url_for('dashboard.overview') }}">
+                                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px;">
                                             <use href="{{ url_for('static', filename='icons/home.svg') }}#home"/>
                                         </svg>
                                     </a>
-                                </li>
-                                <li class="breadcrumb-item active" aria-current="page">{% block meta_title %}{% endblock %}</li>
+                                </li> -->
+                                {% for item in breadcrumb_map[current_route] %}
+                                    <li class="breadcrumb-item {% if loop.last %}active{% endif %}" {% if loop.last %}aria-current="page"{% endif %}>
+                                        {% if item.url %}
+                                            <a href="{{ url_for(item.url) }}">{{ item.label }}</a>
+                                        {% else %}
+                                            {{ item.label }}
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
                             </ol>
-                        {% endblock %}
-                    </nav-->
+                        {% endif %}
+                    {% endblock %}
+                    </nav>
 
                     {% block content %}{% endblock %}
                 </div>

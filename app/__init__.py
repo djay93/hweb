@@ -8,9 +8,16 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 import click
 
 from app.routes.workflows import workflow_bp, workflow_api_bp
-from app.routes.home import home_bp
+from app.routes.dashboard import dashboard_bp
 from app.routes.hmda import hmda_bp, hmda_api_bp
 from app.routes.user import user_bp
+from app.routes.help import help_bp
+from app.routes.settings import settings_bp
+from app.routes.reports import reports_bp
+from app.routes.data_prep import data_prep_bp
+from app.routes.test_runs import test_runs_bp
+from app.routes.compliance import compliance_bp
+
 from app.utils.context_processors import ContextProcessors
 from app.tasks import tasks
 
@@ -33,15 +40,22 @@ def create_app():
     tasks.init_app(app)
     
     # Register blueprints
-    app.register_blueprint(home_bp, url_prefix='/')
+    app.register_blueprint(dashboard_bp, url_prefix='')
     app.register_blueprint(workflow_bp, url_prefix='/workflows')
     app.register_blueprint(hmda_bp, url_prefix='/hmda')
     app.register_blueprint(user_bp, url_prefix='/user')
+    app.register_blueprint(help_bp, url_prefix='/help')
+    app.register_blueprint(settings_bp, url_prefix='/settings')
+    app.register_blueprint(reports_bp, url_prefix='/reports')
+    app.register_blueprint(data_prep_bp, url_prefix='/data-prep')
+    app.register_blueprint(test_runs_bp, url_prefix='/test-runs')
+    app.register_blueprint(compliance_bp, url_prefix='/compliance')
     app.register_blueprint(workflow_api_bp, url_prefix='/api/workflows')
     app.register_blueprint(hmda_api_bp, url_prefix='/api/hmda')
     
     # Context processor
     app.context_processor(ContextProcessors.inject_nav_items)
+    app.context_processor(ContextProcessors.get_breadcrumb_data)
 
     # Configure logging
     if not app.debug and not app.testing:

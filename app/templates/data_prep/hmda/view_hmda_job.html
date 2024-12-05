@@ -2,7 +2,13 @@
 
 {% block title %}Compliance Hub - View HMDA Process{% endblock %}
 {% block page_title %}
-    View HMDA Process
+View HMDA Process
+{% endblock %}
+
+{% block page_actions %}
+<a class="btn d-none d-sm-inline-block" href="javascript:history.back()">
+    Back
+</a>
 {% endblock %}
 
 {% block content %}
@@ -175,7 +181,7 @@
                                                @click.prevent="executeJob(task)" 
                                                title="Execute Job"
                                                :class="{
-                                                   'disabled': ['RUNNING', 'SUCCESS'].includes(task.status)
+                                                   'disabled': ['SUCCESS'].includes(task.status)
                                                }">
                                                 <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
                                                     <use xlink:href="{{ url_for('static', filename='icons/play.svg') }}#play" />
@@ -309,13 +315,33 @@ function hmdaViewForm(initialData, formOptions) {
         },
 
         saveManualJobStatus() {
-            // Logic to save manual job status to the backend
-            const taskIndex = this.form.tasks.findIndex(t => t.id === this.selectedJobTask.id);
-            if (taskIndex !== -1) {
-                this.form.tasks[taskIndex] = { ...this.selectedJobTask };
-            }
-            this.showMessage('success', `Job status updated to "${this.selectedJobTask.status}" for ${this.selectedJobTask.name}.`);
-            this.closeModals();
+            fetch(`/api/hmda/job-tasks/${this.selectedJobTask.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': this.csrfToken
+                },
+                body: JSON.stringify(this.selectedJobTask)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Logic to save manual job status to the backend
+                const taskIndex = this.form.tasks.findIndex(t => t.id === this.selectedJobTask.id);
+                if (taskIndex !== -1) {
+                    this.form.tasks[taskIndex] = { ...this.selectedJobTask };
+                }
+                this.showMessage('success', `Job status updated to "${this.selectedJobTask.status}" for ${this.selectedJobTask.name}.`);
+                this.closeModals();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.showMessage('danger', `Failed to update job status: ${error.message}`);
+            });
         },
 
         refreshTasks() {

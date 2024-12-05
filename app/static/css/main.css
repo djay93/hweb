@@ -227,6 +227,11 @@ select {
   opacity: 1 !important;
 }
 
+/* Breadcrumb styles */
+/* .breadcrumb a {
+  color: var(--tblr-secondary);
+} */
+
 @keyframes fade-in-out {
   0% {
     opacity: 0;

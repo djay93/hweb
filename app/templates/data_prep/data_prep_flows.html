@@ -1,0 +1,78 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Compliance Hub - Data Prep Flows{% endblock %}
+{% block page_title %}Data Prep Flows{% endblock %}
+
+{% block content %}
+<div class="row row-cards" x-data="jobTypeList({{ initial_data }})">
+    <template x-if="loading">
+        <div class="col-12 text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+        </div>
+    </template>
+    <template x-if="!loading && job_types.length === 0">
+        <div class="col-12 text-muted text-center">
+            No job types available
+        </div>
+    </template>
+    <template x-for="(type, index) in job_types" :key="index">
+        <div class="col-md-4">
+            <!-- Clickable Card -->
+            <div class="card" @click="goToViewPage(type.view_url)" style="cursor: pointer;">
+                <div class="card-body">
+                    <h3 class="card-title" x-text="type.name"></h3>
+                    <p class="card-text" x-text="type.description"></p>
+                    <!-- Configure Button -->
+                    <div class="d-flex justify-content-end mt-5">
+                        <a class="btn btn-outline-blue btn-sm d-flex align-items-center" :href="type.configure_url" @click.stop style="padding: 4px 8px; font-size: 12px;">
+                            <svg class="icon me-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 16px; height: 16px; overflow: visible;">
+                                <use xlink:href="{{ url_for('static', filename='icons/cog.svg') }}#cog" />
+                            </svg>
+                            Configure
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script>
+function jobTypeList(initialData) {
+    return {
+        job_types: initialData && initialData.job_types ? initialData.job_types : [
+            {
+                name: 'HMDA',
+                description: 'Home Mortgage Disclosure Act',
+                view_url: '{{ url_for("hmda.list_hmda_jobs") }}',
+                configure_url: '{{ url_for("workflows.list_workflows") }}',
+            },
+            {
+                name: 'EWRA',
+                description: 'Enterprise Wide Risk Assessment',
+                view_url: 'lar.view_lar_job',
+                configure_url: 'lar.configure_lar_job'
+            },
+            {
+                name: 'CCAR',
+                description: 'Comprehensive Capital Analysis and Review',
+                view_url: 'ccar.view_ccar_job',
+                configure_url: 'ccar.configure_ccar_job'
+            },
+            {
+                name: 'CRA',
+                description: 'Community Reinvestment Act',
+                view_url: 'cra.view_cra_job',
+                configure_url: 'cra.configure_cra_job'
+            }
+        ],
+        loading: false,
+
+        // Navigate to View Page
+        goToViewPage(url) {
+            window.location.href = url;
+        },
+    };
+}
+</script>
+{% endblock %}
